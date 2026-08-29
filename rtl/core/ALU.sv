@@ -5,7 +5,6 @@ module ALU #(
     parameter                           BW                         = 32    
 )
 (
-    input                               clock                      ,
     input              [BW-1: 0]        d1                         ,
     input              [BW-1: 0]        d2                         ,
     input              [   3: 0]        choice                     ,
@@ -109,4 +108,3 @@ add
 
 
 endmodule
-
