@@ -15,7 +15,8 @@ if (-not (Test-Path -LiteralPath $GhPath)) {
 function Invoke-GhJson {
     param(
         [Parameter(Mandatory)] [string]$Endpoint,
-        [Parameter(Mandatory)] [hashtable]$Body
+        [Parameter(Mandatory)] [hashtable]$Body,
+        [ValidateSet('POST', 'PATCH')] [string]$Method = 'POST'
     )
 
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
@@ -28,7 +29,7 @@ function Invoke-GhJson {
     $startInfo.ArgumentList.Add('api')
     $startInfo.ArgumentList.Add($Endpoint)
     $startInfo.ArgumentList.Add('--method')
-    $startInfo.ArgumentList.Add('POST')
+    $startInfo.ArgumentList.Add($Method)
     $startInfo.ArgumentList.Add('--input')
     $startInfo.ArgumentList.Add('-')
 
@@ -147,14 +148,14 @@ foreach ($commit in $commits) {
     Write-Host "Uploaded commit $commit"
 }
 
-[void](Invoke-GhJson -Endpoint "repos/$Repository/git/refs" -Body @{
-    ref = "refs/heads/$Branch"
-    sha = $remoteParent
-})
+[void](Invoke-GhJson -Endpoint "repos/$Repository/git/refs/heads/$Branch" `
+    -Method 'PATCH' -Body @{
+        sha   = $remoteParent
+        force = $true
+    })
 
 & git -C $repoRoot update-ref "refs/remotes/origin/$Branch" $remoteParent
 & git -C $repoRoot config "branch.$Branch.remote" origin
 & git -C $repoRoot config "branch.$Branch.merge" "refs/heads/$Branch"
 
 Write-Host "Published $Repository branch $Branch at $remoteParent"
-
