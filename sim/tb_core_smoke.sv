@@ -57,11 +57,12 @@ module tb_core_smoke;
 
         imem[0] = 32'h0050_0013; // addi x0, x0, 5 (must be discarded)
         imem[1] = 32'h0050_0093; // addi x1, x0, 5
-        imem[2] = 32'h0070_0113; // addi x2, x0, 7
-        imem[3] = 32'h0020_81b3; // add  x3, x1, x2
-        imem[4] = 32'h8010_0237; // lui  x4, 0x80100
-        imem[5] = 32'h0032_2023; // sw   x3, 0(x4)
-        imem[6] = 32'h0000_006f; // jal  x0, 0
+        imem[2] = 32'h0000_837f; // illegal opcode, rd=x6, rs1=x1
+        imem[3] = 32'h0070_0113; // addi x2, x0, 7
+        imem[4] = 32'h0020_81b3; // add  x3, x1, x2
+        imem[5] = 32'h8010_0237; // lui  x4, 0x80100
+        imem[6] = 32'h0032_2023; // sw   x3, 0(x4)
+        imem[7] = 32'h0000_006f; // jal  x0, 0
 
         repeat (5) @(posedge clk);
         rst = 1'b0;
@@ -84,6 +85,10 @@ module tb_core_smoke;
 
                 $fatal(1, "SMOKE FAIL: cycle=%0d addr=%08x data=%08x mask=%b",
                        cycles, perip_addr, perip_wdata, perip_mask);
+            end
+
+            if (debug_wb_have_inst && debug_wb_ena && (debug_wb_reg === 5'd6)) begin
+                $fatal(1, "SMOKE FAIL: illegal instruction wrote x6=%08x", debug_wb_value);
             end
 
             if (cycles >= 100) begin

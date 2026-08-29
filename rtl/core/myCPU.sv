@@ -57,6 +57,7 @@ module myCPU (
   wire        IDU_valid;
   wire        IDU_ready;
   wire        IDU_fence_i_flag;
+  wire        IDU_illegal_inst;
   /************************* EXU ********************/
   wire [31:0] EXU_branch_pc;
   wire        EXU_jump_flag;
@@ -204,6 +205,7 @@ assign debug_wb_value = WBU_rd_value;
       .mret_flag   (IDU_mret_flag),
       .ecall_flag  (IDU_ecall_flag),
       .fence_i_flag(IDU_fence_i_flag),
+      .illegal_inst(IDU_illegal_inst),
 
       .add2_value   (IDU_add2_value),
       .add1_value   (IDU_add1_value),
@@ -353,4 +355,3 @@ assign debug_wb_value = WBU_rd_value;
   );
 
 endmodule
-
