@@ -32,6 +32,10 @@ module IFU_sync (
     logic        request_killed;
     logic        response_valid;
 
+    // response_inst is meaningful only while response_valid is asserted.  Do
+    // not reset the payload register: this lets Vivado merge the synchronous
+    // instruction path into BRAM without putting an asynchronous reset on the
+    // BRAM output register.
     // The response buffer is intentionally one entry deep.  This gives a
     // conservative, easy-to-audit implementation before adding prefetch
     // depth or a full ready/valid instruction queue.
@@ -48,7 +52,6 @@ module IFU_sync (
             fetch_pc        <= RESET_PC;
             request_pc      <= RESET_PC;
             response_pc     <= RESET_PC;
-            response_inst   <= 32'h0000_0013;
             request_pending <= 1'b0;
             request_killed  <= 1'b0;
             response_valid  <= 1'b0;

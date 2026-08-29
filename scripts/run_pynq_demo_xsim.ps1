@@ -27,7 +27,7 @@ Push-Location $buildDir
 try {
     & $xvlog --sv --include $coreDir --include $socDir @sources $testbench
     if ($LASTEXITCODE -ne 0) { throw "xvlog failed with exit code $LASTEXITCODE" }
-    & $xelab tb_pynq_demo -s tb_pynq_demo_sim -debug typical --timescale 1ns/1ps
+    & $xelab tb_pynq_demo -s tb_pynq_demo_sim -debug typical --timescale 1ns/1ps -mt 8
     if ($LASTEXITCODE -ne 0) { throw "xelab failed with exit code $LASTEXITCODE" }
     $simOutput = & $xsim tb_pynq_demo_sim -runall 2>&1
     $simExit = $LASTEXITCODE

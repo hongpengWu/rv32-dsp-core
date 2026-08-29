@@ -34,7 +34,7 @@ try {
         @{ Top = 'tb_control_hazard'; Snapshot = 'tb_control_hazard_sim'; Pass = 'CONTROL HAZARD PASS' }
     )
     foreach ($case in $cases) {
-        & $xelab $case.Top -s $case.Snapshot --timescale 1ns/1ps
+        & $xelab $case.Top -s $case.Snapshot --timescale 1ns/1ps -mt 8
         if ($LASTEXITCODE -ne 0) { throw "xelab failed for $($case.Top) with exit code $LASTEXITCODE" }
         $simOutput = & $xsim $case.Snapshot -runall 2>&1
         $simExit = $LASTEXITCODE

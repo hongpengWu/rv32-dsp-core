@@ -32,7 +32,7 @@ try {
     }
 
     & $xelab tb_core_smoke -s tb_core_smoke_sim -debug typical `
-        --timescale 1ns/1ps
+        --timescale 1ns/1ps -mt 8
     if ($LASTEXITCODE -ne 0) {
         throw "xelab failed with exit code $LASTEXITCODE"
     }

@@ -7,18 +7,20 @@ set mem_file [file normalize [file join $repo_dir mem pynq_demo.mem]]
 
 file mkdir $output_dir
 open_project $project_file
+set_param general.maxThreads 8
+set jobs 8
 set_property generic [list IMEM_INIT_FILE=$mem_file] [get_filesets sources_1]
 set_property top rv32_pynq_z2_sync_mmcm_demo [get_filesets sources_1]
 update_compile_order -fileset sources_1
 
 reset_run synth_1
-launch_runs synth_1 -jobs 4
+launch_runs synth_1 -jobs $jobs
 wait_on_run synth_1
 if {[get_property STATUS [get_runs synth_1]] != "synth_design Complete!"} {
     error "MMCM PYNQ synthesis did not complete successfully"
 }
 
-launch_runs impl_1 -to_step write_bitstream -jobs 4
+launch_runs impl_1 -to_step write_bitstream -jobs $jobs
 wait_on_run impl_1
 if {[get_property STATUS [get_runs impl_1]] != "write_bitstream Complete!"} {
     error "MMCM PYNQ implementation or bitstream generation failed"

@@ -44,7 +44,7 @@ original project remains the reference for its old memory map and behavior.
 - Vivado 2024.2: `E:\Xilinx\Vivado\2024.2`
 - Git for Windows
 - Python 3.12
-- RISC-V bare-metal GCC: not installed yet
+- xPack RISC-V bare-metal GCC 15.2.0: `E:\riscv-tools\xpack-riscv-none-elf-gcc-15.2.0-1`
 - GitHub CLI
 
 ## Run the baseline smoke test
@@ -75,6 +75,13 @@ Run the hazard and RV32I control-flow regressions:
 .\scripts\run_control_flow_xsim.ps1
 ```
 
+The synchronous Core's architectural trap checks can be exercised directly:
+
+```powershell
+.\scripts\run_cpu_sync_control_xsim.ps1
+.\scripts\run_cpu_sync_misaligned_xsim.ps1
+```
+
 These tests cover valid-gated forwarding, true and false load-use hazards, all
 six RV32I branch conditions on taken and not-taken paths, negative branch/JAL
 offsets, JAL/JALR link values, JALR bit-zero clearing, and wrong-path flushing.
@@ -90,6 +97,21 @@ Run the complete PL-only strict regression:
 The strict entry point runs every current test, requires its pass marker, and
 fails on tool errors, simulator warnings, fatal messages, or X/Z detection in
 the PYNQ integration test. It does not require a RISC-V compiler or a board.
+
+Run one upstream `riscv-tests` RV32UI case, or the selected RV32I profile:
+
+```powershell
+.\scripts\run_riscv_test_xsim.ps1 -Test add
+.\scripts\run_rv32ui_official.ps1
+```
+
+The Windows-native flow compiles the upstream assembly with
+`-march=rv32i_zicsr_zifencei -mabi=ilp32`, converts the ELF to a sparse
+32-bit memory image, runs it on `myCPU_sync`, and requires `tohost=1`.
+The selected profile contains 41 passing RV32UI cases.  Upstream `ma_data` is
+excluded because it requires hardware-completed misaligned accesses, whereas
+this Core intentionally implements the standard load/store-misalignment traps.
+See `docs/riscv-tests.md` for the exact scope and provenance.
 
 The synchronous-memory migration is exercised separately with:
 
@@ -114,8 +136,8 @@ Generated projects and simulation files go under `build/` and are not tracked.
 ## PYNQ-Z2 standalone demo
 
 The direct-clock comparison demo uses the 125 MHz PL clock, BTN0 as reset, and
-the four user LEDs.  The timing-safe board image uses a real MMCM to derive a
-100 MHz Core/BRAM clock from that 125 MHz reference; this is the recommended
+the four user LEDs.  The timing-safe board image uses a real MMCM to derive an
+80 MHz Core/BRAM clock from that 125 MHz reference; this is the recommended
 image for hardware deployment.  Both built-in programs write `0x5` to the LED
 MMIO register at `0x80200040`.  The synchronous path uses inferred Block RAM
 with explicit one-cycle request/response latency.
@@ -149,9 +171,9 @@ The timing evidence for the two clocking choices is recorded in
 variant is retained for comparison; use the MMCM bitstream for board
 sign-off.
 
-The bitstream and post-route reports are written under
-`build/bitstream_pynq_z2/`. After programming the board, LED0 and LED2 should
-turn on (`0101`); BTN0 restarts the Core.
+The timing-safe bitstream and post-route reports are written under
+`build/bitstream_pynq_z2_sync_mmcm/`. After programming the board, LED0 and
+LED2 should turn on (`0101`); BTN0 restarts the Core.
 
 This first milestone is intentionally PL-only, so Vivado reports the expected
 `ZPS7-1` advisory that no PS7 processing-system block is present. It does not
@@ -165,5 +187,6 @@ arrives.
 
 The optional `rv32_pl_controlled` shell reserves start, reset, done, cycle, and
 retirement-counter signals for a future PS7/AXI-Lite adapter. It is verified as
-a standalone PL module today; the current board top remains
-`rv32_pynq_z2_demo`, so no PS, Linux, or board is required for the regression.
+a standalone PL module today; the recommended board top is
+`rv32_pynq_z2_sync_mmcm_demo` (with `rv32_pynq_z2_demo` retained for direct-
+clock comparison), so no PS, Linux, or board is required for the regression.

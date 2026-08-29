@@ -44,7 +44,9 @@ module Reg_Stack(
                                                              (csr_addr == 32'h305)? mtvec_out       :
                                                              (csr_addr == 32'h343)? mtval_out       :
                                                              (csr_addr == 32'hf11)?mvendorid_out    :
-                                                             (csr_addr == 32'hf12)?marchid_out:32'd0;
+                                                             (csr_addr == 32'hf12)?marchid_out      :
+                                                             (csr_addr == 32'hf14)?32'd0             :
+                                                             32'd0;
 
 
 

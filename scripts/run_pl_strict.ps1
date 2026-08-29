@@ -16,6 +16,7 @@ $tests = @(
     @{ Name = 'sync-memory-model'; Script = 'run_sync_mem_xsim.ps1'; Pass = 'SYNC MEM PASS:' },
     @{ Name = 'sync-core'; Script = 'run_cpu_sync_xsim.ps1'; Pass = 'SYNC CORE PASS:' },
     @{ Name = 'sync-control'; Script = 'run_cpu_sync_control_xsim.ps1'; Pass = 'SYNC CONTROL PASS:' },
+    @{ Name = 'sync-misaligned'; Script = 'run_cpu_sync_misaligned_xsim.ps1'; Pass = 'SYNC MISALIGNED PASS:' },
     @{ Name = 'pynq-pl-demo'; Script = 'run_pynq_demo_xsim.ps1'; Pass = 'PYNQ DEMO PASS:' },
     @{ Name = 'pynq-sync-demo'; Script = 'run_pynq_sync_demo_xsim.ps1'; Pass = 'SYNC PYNQ PASS:' },
     @{ Name = 'pynq-sync-mmcm-demo'; Script = 'run_pynq_sync_mmcm_demo_xsim.ps1'; Pass = 'MMCM PYNQ PASS:' },

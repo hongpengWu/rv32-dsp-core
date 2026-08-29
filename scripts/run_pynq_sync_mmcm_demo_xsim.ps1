@@ -29,7 +29,7 @@ Push-Location $buildDir
 try {
     & $xvlog --sv --include $coreDir --include $socDir @sources $testbench $glbl
     if ($LASTEXITCODE -ne 0) { throw "xvlog failed with exit code $LASTEXITCODE" }
-    & $xelab tb_pynq_sync_mmcm_demo glbl -s tb_pynq_sync_mmcm_demo_sim -debug typical --timescale 1ns/1ps -L unisims_ver
+    & $xelab tb_pynq_sync_mmcm_demo glbl -s tb_pynq_sync_mmcm_demo_sim -debug typical --timescale 1ns/1ps -L unisims_ver -mt 8
     if ($LASTEXITCODE -ne 0) { throw "xelab failed with exit code $LASTEXITCODE" }
     $simOutput = & $xsim tb_pynq_sync_mmcm_demo_sim -runall 2>&1
     $simExit = $LASTEXITCODE

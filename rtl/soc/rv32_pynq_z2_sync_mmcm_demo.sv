@@ -3,16 +3,17 @@
 // Timing-safe PL-only PYNQ-Z2 demo.
 //
 // The board oscillator is 125 MHz.  The synchronous Core and both BRAM
-// interfaces run from a real MMCM-generated 100 MHz clock, leaving timing
+// interfaces run from a real MMCM-generated 80 MHz clock, leaving timing
 // margin for the intentionally conservative educational pipeline.  The
 // original direct-125-MHz top remains available as a comparison baseline.
-// BTN0 is an active-high asynchronous reset; MMCM lock is also treated as a
-// reset condition until the generated clock is stable.
+// BTN0 is an active-high board reset connected directly to the MMCM reset;
+// the Core reset is then sampled and released synchronously after lock.
 module rv32_pynq_z2_sync_mmcm_demo #(
     parameter integer IMEM_WORDS = 64,
     parameter integer DMEM_BYTES = 256,
     parameter string IMEM_INIT_FILE = "",
-    parameter string DMEM_INIT_FILE = ""
+    parameter string DMEM_INIT_FILE = "",
+    parameter real CORE_CLKOUT_DIVIDE_F = 12.5
 ) (
     input  logic       sys_clk,
     input  logic [3:0] btn,
@@ -35,14 +36,14 @@ module rv32_pynq_z2_sync_mmcm_demo #(
     wire cpu_clk;
     wire mmcm_fb;
 
-    // 125 MHz * 8 / 10 = 100 MHz.  The 1000 MHz VCO is in the 7-series
+    // 125 MHz * 8 / 12.5 = 80 MHz.  The 1000 MHz VCO is in the 7-series
     // MMCM legal range and the input period matches the PYNQ-Z2 oscillator.
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
         .CLKFBOUT_MULT_F(8.0),
         .CLKIN1_PERIOD(8.0),
         .DIVCLK_DIVIDE(1),
-        .CLKOUT0_DIVIDE_F(10.0),
+        .CLKOUT0_DIVIDE_F(CORE_CLKOUT_DIVIDE_F),
         .STARTUP_WAIT("FALSE")
     ) mmcm_i (
         .CLKIN1(sys_clk),
@@ -80,9 +81,11 @@ module rv32_pynq_z2_sync_mmcm_demo #(
     logic [31:0] dmem_rsp_rdata;
     logic dmem_ram_req_valid;
 
-    // Synchronize the external reset into the generated clock domain and
-    // hold the Core in reset while the MMCM is not locked.
-    always_ff @(posedge cpu_clk or posedge btn[0] or negedge mmcm_locked) begin
+    // Sample the external reset and MMCM lock status in the generated clock
+    // domain, then release reset after four clean clock edges.  Keeping this
+    // synchronizer synchronous avoids propagating an asynchronous reset
+    // attribute onto inferred BRAM control pins.
+    always_ff @(posedge cpu_clk) begin
         if (btn[0] || !mmcm_locked)
             reset_sync <= 4'hf;
         else

@@ -48,6 +48,12 @@ architectural result.
 Exit criterion: the declared RV32I/Zicsr test profiles pass and produce saved
 signatures.
 
+Current status: the RTL now implements the listed Zicsr/system instructions,
+illegal-instruction traps, and precise load/store misalignment traps.  The
+Windows-native GCC/ELF/XSim flow passes the selected 41-case upstream RV32UI
+profile.  The remaining Phase 3 work is broader privileged/CSR coverage and
+integration with the current RISC-V architectural test framework.
+
 ## Phase 4: Synchronous memory and PYNQ-Z2
 
 - Replace the zero-latency ports with request/response interfaces.
@@ -58,6 +64,11 @@ signatures.
 
 Exit criterion: Python loads a program and data, starts the PL core, waits for
 completion, and reads the correct result.
+
+Current status: synchronous Core/ROM/RAM interfaces, a PL-only PYNQ-Z2 demo,
+and a timing-safe 80 MHz MMCM board image are implemented and covered by the
+strict Windows/XSim regression.  PS/AXI control remains optional and is not a
+dependency for the current milestone.
 
 ## Phase 5: Standard multiply and custom DSP extension
 
@@ -78,4 +89,3 @@ Compare RV32I, RV32I+Zmmul, and RV32I+Zmmul+Xdsp using:
 - LUT, FF, BRAM, and DSP48E1 use
 - maximum clock frequency
 - numerical correctness and saturation behavior
-

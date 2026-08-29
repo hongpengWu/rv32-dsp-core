@@ -84,9 +84,15 @@ module IDU(
     wire                               csr_write_req                 ;
     wire                               csr_writeable                 ;
     wire               [  31: 0]        csr_source                   ;
+    wire               [  31: 0]        memory_address                ;
+    wire               [   1: 0]        memory_address_low              ;
+    wire                               misaligned_access              ;
     reg                                legal_inst                  ;
 
     assign                              ready_last                  = ready_next;
+    // Keep the decoded instruction visible for one cycle so Control can take
+    // a precise trap.  EXU_inst_clear (driven by illegal_inst below) removes a
+    // misaligned access before it can become a live LSU transaction.
     assign                              valid_next                  = valid_last && legal_inst;
 
 
@@ -110,7 +116,8 @@ module IDU(
                                                                        (csr_addr12 == 12'h342) ||
                                                                        (csr_addr12 == 12'h343) ||
                                                                        (csr_addr12 == 12'hf11) ||
-                                                                       (csr_addr12 == 12'hf12);
+                                                                       (csr_addr12 == 12'hf12) ||
+                                                                       (csr_addr12 == 12'hf14);
     assign                              csr_access                   = (opcode == `M_opcode) &&
                                                                        (funct3 != 3'b000) &&
                                                                        csr_addr_supported;
@@ -165,23 +172,39 @@ module IDU(
         endcase
     end
 
-    assign                              illegal_inst                = valid_last && !legal_inst;
-    assign                              trap_cause                  = ecall_flag ? 32'd11 :
+    // Alignment is a low-bit property.  Keep the 2-bit check out of the
+    // decode/control critical path; the full address is only needed as the
+    // mtval payload when a trap is actually taken.
+    assign                              memory_address_low            = add1_value[1:0] + add2_value[1:0];
+    assign                              memory_address              = add1_value + add2_value;
+    assign                              misaligned_access            = valid_last && legal_inst &&
+                                                                       ((opcode == `I0_opcode || opcode == `S_opcode) &&
+                                                                        (((funct3 == 3'b001) || (funct3 == 3'b101)) && memory_address_low[0] ||
+                                                                         (funct3 == 3'b010 && |memory_address_low)));
+
+    // `illegal_inst` is the existing trap request wire consumed by Control.
+    // It now also carries the two mandated load/store-misalignment causes;
+    // the instruction is still distinguished by trap_cause/trap_tval below.
+    assign                              illegal_inst                = valid_last && (!legal_inst || misaligned_access);
+    assign                              trap_cause                  = misaligned_access ?
+                                                                       ((opcode == `S_opcode) ? 32'd6 : 32'd4) :
+                                                                       ecall_flag ? 32'd11 :
                                                                        ebreak_flag ? 32'd3 : 32'd2;
-    assign                              trap_tval                   = illegal_inst ? inst : 32'd0;
+    assign                              trap_tval                   = misaligned_access ? memory_address :
+                                                                       (illegal_inst ? inst : 32'd0);
 
     assign                              csr_wen_next[0]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h341);
     assign                              csr_wen_next[1]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h342);
     assign                              csr_wen_next[2]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h300);
     assign                              csr_wen_next[3]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h305);
 
-    assign                              R_wen_next                  = legal_inst && ((opcode == `R_opcode) || (opcode == `I0_opcode) ||
+    assign                              R_wen_next                  = legal_inst && !misaligned_access && ((opcode == `R_opcode) || (opcode == `I0_opcode) ||
                                                                        (opcode == `I1_opcode) || (opcode == `I2_opcode) ||
                                                                        (opcode == `U0_opcode) || (opcode == `U1_opcode) ||
                                                                        (opcode == `J_opcode) ||
                                                                        csr_access);
-    assign                              mem_wen                     = legal_inst && (opcode == `S_opcode);
-    assign                              mem_ren                     = legal_inst && (opcode == `I0_opcode);
+    assign                              mem_wen                     = legal_inst && !misaligned_access && (opcode == `S_opcode);
+    assign                              mem_ren                     = legal_inst && !misaligned_access && (opcode == `I0_opcode);
 
     assign                              jump_flag                   = legal_inst && (opcode == `I2_opcode || opcode == `J_opcode);
 
