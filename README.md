@@ -113,11 +113,12 @@ Generated projects and simulation files go under `build/` and are not tracked.
 
 ## PYNQ-Z2 standalone demo
 
-The current board demo uses the 125 MHz PL clock, BTN0 as reset, and the four
-user LEDs. Its built-in four-instruction program writes `0x5` to the LED MMIO
-register at `0x80200040`. The temporary zero-latency memories are intentionally
-small: 256 bytes of instruction ROM and 256 bytes of data RAM. They will be
-replaced by synchronous BRAM when the Core memory interface is migrated.
+The direct-clock comparison demo uses the 125 MHz PL clock, BTN0 as reset, and
+the four user LEDs.  The timing-safe board image uses a real MMCM to derive a
+100 MHz Core/BRAM clock from that 125 MHz reference; this is the recommended
+image for hardware deployment.  Both built-in programs write `0x5` to the LED
+MMIO register at `0x80200040`.  The synchronous path uses inferred Block RAM
+with explicit one-cycle request/response latency.
 
 Run the self-checking integration simulation:
 
@@ -133,6 +134,20 @@ Create the Vivado project and generate a bitstream:
 & 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
   -source .\vivado\build_pynq_z2_bitstream.tcl
 ```
+
+For the timing-safe synchronous board image:
+
+```powershell
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\create_pynq_z2_sync_mmcm_project.tcl
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\build_pynq_z2_sync_mmcm_bitstream.tcl
+```
+
+The timing evidence for the two clocking choices is recorded in
+[`docs/timing-baseline.md`](docs/timing-baseline.md).  The direct 125 MHz
+variant is retained for comparison; use the MMCM bitstream for board
+sign-off.
 
 The bitstream and post-route reports are written under
 `build/bitstream_pynq_z2/`. After programming the board, LED0 and LED2 should

@@ -10,7 +10,13 @@ PS software application.
 - [x] Confirm the PYNQ-Z2 pin constraints in `vivado/constraints/pynq_z2_demo.xdc`.
 - [x] Run `scripts/run_pl_strict.ps1` on Windows.
 - [x] Run the Vivado implementation script and confirm no DRC errors.
-- [x] Confirm post-route timing meets the 125 MHz `sys_clk` constraint.
+- [x] Build the timing-safe MMCM variant with
+      `vivado/create_pynq_z2_sync_mmcm_project.tcl` and
+      `vivado/build_pynq_z2_sync_mmcm_bitstream.tcl`.
+- [x] Confirm the MMCM variant meets timing: 125 MHz input, 100 MHz generated
+      Core/BRAM clock, post-route WNS +0.239 ns and WHS +0.089 ns.
+- [ ] Close timing at 125 MHz for the direct-clock comparison top.  It is
+      retained as a diagnostic baseline and is not the board sign-off image.
 
 ## First power-up
 
@@ -18,7 +24,7 @@ PS software application.
   micro-USB.
 - [ ] Set the board power jumper correctly and verify the board power LED.
 - [ ] Open Vivado Hardware Manager and connect to the local hardware target.
-- [ ] Program `build/bitstream_pynq_z2/rv32_pynq_z2_demo.bit`.
+- [ ] Program `build/bitstream_pynq_z2_sync_mmcm/rv32_pynq_z2_sync_mmcm_demo.bit`.
 - [ ] Confirm the DONE indicator is asserted after programming.
 - [ ] Confirm LED0 and LED2 are on (`0101`). The individual LEDs and push
   buttons on PYNQ-Z2 are active-high.
@@ -30,7 +36,7 @@ PS software application.
 - [ ] Repeat programming and reset at least three times to rule out a timing-
   sensitive startup issue.
 - [ ] Replace the ROM image with a second known program and repeat the reset,
-  store, and LED checks.
+      store, and LED checks.  Rebuild the bitstream after changing the image.
 
 ## Troubleshooting order
 
