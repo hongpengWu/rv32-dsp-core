@@ -116,3 +116,9 @@ Create the Vivado project and generate a bitstream:
 The bitstream and post-route reports are written under
 `build/bitstream_pynq_z2/`. After programming the board, LED0 and LED2 should
 turn on (`0101`); BTN0 restarts the Core.
+
+This first milestone is intentionally PL-only, so Vivado reports the expected
+`ZPS7-1` advisory that no PS7 processing-system block is present. It does not
+prevent bitstream generation or PL configuration. The PYNQ-Z2 manual confirms
+that the push-buttons are active-high when pressed and the individual LEDs are
+active-high.
