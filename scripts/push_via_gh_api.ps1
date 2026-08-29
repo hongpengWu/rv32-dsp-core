@@ -84,6 +84,12 @@ if ($LASTEXITCODE -ne 0 -or $commits.Count -eq 0) {
 
 $uploadedBlobs = @{}
 $remoteParent = $null
+$existingRemote = $null
+try {
+    $existingRemote = (& $GhPath api "repos/$Repository/commits/$Branch" 2>$null | ConvertFrom-Json)
+} catch {
+    $existingRemote = $null
+}
 
 foreach ($commit in $commits) {
     $entries = @()
@@ -144,18 +150,30 @@ foreach ($commit in $commits) {
         }
     }
 
-    if ($newCommit.sha -ne $commit) {
-        throw "Commit SHA mismatch: local=$commit remote=$($newCommit.sha)"
+    # GitHub stores author/committer timestamps as UTC. That can change the
+    # commit object ID when the local commit used a +0800 timezone, even though
+    # the tree, parent, author, message, and contents are identical.
+    if ($newCommit.tree.sha -ne $tree.sha -or $newCommit.message.TrimEnd() -ne $message) {
+        throw "Remote commit metadata mismatch for local commit $commit"
     }
     $remoteParent = $newCommit.sha
     Write-Host "Uploaded commit $commit"
 }
 
-[void](Invoke-GhJson -Endpoint "repos/$Repository/git/refs/heads/$Branch" `
+$refEndpoint = "repos/$Repository/git/refs/heads/$Branch"
+if ($null -eq $existingRemote) {
+    $refEndpoint = "repos/$Repository/git/refs"
+    [void](Invoke-GhJson -Endpoint $refEndpoint -Body @{
+        ref = "refs/heads/$Branch"
+        sha = $remoteParent
+    })
+} else {
+    [void](Invoke-GhJson -Endpoint $refEndpoint `
     -Method 'PATCH' -Body @{
         sha   = $remoteParent
         force = $true
     })
+}
 
 & git -C $repoRoot update-ref "refs/remotes/origin/$Branch" $remoteParent
 & git -C $repoRoot config "branch.$Branch.remote" origin
