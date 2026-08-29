@@ -14,8 +14,10 @@ PS software application.
       `vivado/create_pynq_z2_sync_mmcm_project.tcl` and
       `vivado/build_pynq_z2_sync_mmcm_bitstream.tcl`.
 - [x] Confirm the MMCM variant meets timing: 125 MHz input, 80 MHz generated
-      Core/BRAM clock, post-route WNS +0.501 ns and WHS +0.156 ns, with zero
+      Core/BRAM clock, post-route WNS +0.268 ns and WHS +0.059 ns, with zero
       setup or hold failing endpoints.
+- [x] Simulate both cold start and runtime BTN0 reset, including MMCM unlock,
+      CPU-domain reset, LED clear, and CPU restart.
 - [ ] Close timing at 125 MHz for the direct-clock comparison top.  It is
       retained as a diagnostic baseline and is not the board sign-off image.
 
@@ -32,8 +34,8 @@ PS software application.
 
 ## Functional checks
 
-- [ ] Press BTN0 and confirm the LEDs clear while reset is held.
-- [ ] Release BTN0 and confirm the demo restarts and returns to `0101`.
+- [ ] Press and release BTN0; after the generated clock resumes, confirm the
+      CPU reset clears the LEDs and the demo restarts to `0101`.
 - [ ] Repeat programming and reset at least three times to rule out a timing-
   sensitive startup issue.
 - [ ] Replace the ROM image with a second known program and repeat the reset,
@@ -48,7 +50,7 @@ PS software application.
 4. Reduce the design to a clock-counter LED test to isolate board wiring.
 5. Re-run the strict PL simulation before changing RTL.
 
-The post-route DRC has zero errors.  Three `PDRC-138` LUT-packing warnings are
+The post-route DRC has zero errors.  Two `PDRC-138` LUT-packing warnings are
 tool placement advisories, and the expected PL-only `ZPS7-1` advisory can
 remain until a later milestone that intentionally adds a PS7 processing-
 system block.

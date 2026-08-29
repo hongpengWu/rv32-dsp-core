@@ -54,14 +54,52 @@ module tb_pynq_sync_mmcm_demo;
         // the reset synchronizer needs four generated-clock cycles.
         repeat (8) @(posedge sys_clk);
         btn[0] = 1'b0;
-        repeat (500) begin
+        i = 0;
+        while (led !== 4'h5 && i < 500) begin
             @(posedge dut.cpu_clk);
-            if (led === 4'h5) begin
-                $display("MMCM PYNQ PASS: LOCKED=%b LED=%x", dut.mmcm_locked, led);
-                $finish;
-            end
+            i = i + 1;
         end
-        $fatal(1, "MMCM PYNQ FAIL: LED did not reach 5 (LOCKED=%b)",
-               dut.mmcm_locked);
+        if (led !== 4'h5)
+            $fatal(1, "MMCM PYNQ FAIL: LED did not reach 5 after cold reset");
+
+        // Exercise BTN0 after the CPU is already running.  cpu_clk stops while
+        // the MMCM is reset, so the board-clock reset capture must preserve the
+        // request until the generated clock has restarted.
+        btn[0] = 1'b1;
+        repeat (8) @(posedge sys_clk);
+        if (dut.mmcm_locked !== 1'b0)
+            $fatal(1, "MMCM PYNQ FAIL: MMCM stayed locked during BTN0 reset");
+        btn[0] = 1'b0;
+
+        i = 0;
+        while (dut.cpu_rst !== 1'b1 && i < 500) begin
+            @(posedge dut.cpu_clk);
+            #1;
+            i = i + 1;
+        end
+        if (dut.cpu_rst !== 1'b1)
+            $fatal(1, "MMCM PYNQ FAIL: runtime reset did not reach CPU domain");
+
+        i = 0;
+        while (led !== 4'h0 && i < 20) begin
+            @(posedge dut.cpu_clk);
+            #1;
+            i = i + 1;
+        end
+        if (led !== 4'h0)
+            $fatal(1, "MMCM PYNQ FAIL: runtime reset did not clear LED");
+
+        i = 0;
+        while (led !== 4'h5 && i < 500) begin
+            @(posedge dut.cpu_clk);
+            #1;
+            i = i + 1;
+        end
+        if (led !== 4'h5)
+            $fatal(1, "MMCM PYNQ FAIL: CPU did not restart after BTN0 reset");
+
+        $display("MMCM PYNQ PASS: cold start and runtime reset, LOCKED=%b LED=%x",
+                 dut.mmcm_locked, led);
+        $finish;
     end
 endmodule

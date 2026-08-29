@@ -70,7 +70,9 @@ module rv32_pynq_z2_sync_mmcm_demo #(
     BUFG cpu_clk_buf_i  (.I(mmcm_clk_unbuf), .O(cpu_clk));
 
     logic cpu_rst;
-    logic [3:0] reset_sync = 4'hf;
+    logic [3:0] reset_sys_sync = 4'hf;
+    (* ASYNC_REG = "TRUE" *) logic [1:0] reset_cpu_sync = 2'b11;
+    logic reset_request;
     logic imem_req_valid;
     logic [31:0] imem_req_addr, imem_rsp_data;
     logic imem_rsp_valid;
@@ -81,17 +83,26 @@ module rv32_pynq_z2_sync_mmcm_demo #(
     logic [31:0] dmem_rsp_rdata;
     logic dmem_ram_req_valid;
 
-    // Sample the external reset and MMCM lock status in the generated clock
-    // domain, then release reset after four clean clock edges.  Keeping this
-    // synchronizer synchronous avoids propagating an asynchronous reset
-    // attribute onto inferred BRAM control pins.
-    always_ff @(posedge cpu_clk) begin
+    // The board clock continues running while the MMCM is held in reset, so
+    // latch reset/lock requests in that domain first.  This guarantees that a
+    // runtime BTN0 press cannot be missed when cpu_clk temporarily stops.
+    always_ff @(posedge sys_clk) begin
         if (btn[0] || !mmcm_locked)
-            reset_sync <= 4'hf;
+            reset_sys_sync <= 4'hf;
         else
-            reset_sync <= {reset_sync[2:0], 1'b0};
+            reset_sys_sync <= {reset_sys_sync[2:0], 1'b0};
     end
-    assign cpu_rst = reset_sync[3];
+    assign reset_request = reset_sys_sync[3];
+
+    // Synchronize the reset level into the generated-clock domain.  The first
+    // stage is the only register that samples the cross-domain signal; the
+    // second stage is clocked solely from the first stage.  Assertion remains
+    // held by reset_request until the MMCM has been locked for several
+    // board-clock cycles, so the CPU cannot resume on a stale partial cycle.
+    always_ff @(posedge cpu_clk) begin
+        reset_cpu_sync <= {reset_cpu_sync[0], reset_request};
+    end
+    assign cpu_rst = reset_cpu_sync[1];
 
     assign dmem_ram_req_valid = dmem_req_valid &&
                                  (dmem_req_addr >= DATA_BASE) &&
