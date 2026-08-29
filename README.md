@@ -89,3 +89,30 @@ Create a local Vivado project when GUI inspection is useful:
 ```
 
 Generated projects and simulation files go under `build/` and are not tracked.
+
+## PYNQ-Z2 standalone demo
+
+The current board demo uses the 125 MHz PL clock, BTN0 as reset, and the four
+user LEDs. Its built-in four-instruction program writes `0x5` to the LED MMIO
+register at `0x80200040`. The temporary zero-latency memories are intentionally
+small: 256 bytes of instruction ROM and 256 bytes of data RAM. They will be
+replaced by synchronous BRAM when the Core memory interface is migrated.
+
+Run the self-checking integration simulation:
+
+```powershell
+.\scripts\run_pynq_demo_xsim.ps1
+```
+
+Create the Vivado project and generate a bitstream:
+
+```powershell
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\create_pynq_z2_project.tcl
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\build_pynq_z2_bitstream.tcl
+```
+
+The bitstream and post-route reports are written under
+`build/bitstream_pynq_z2/`. After programming the board, LED0 and LED2 should
+turn on (`0101`); BTN0 restarts the Core.

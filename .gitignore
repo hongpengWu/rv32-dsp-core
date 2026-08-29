@@ -19,7 +19,7 @@ build/
 *.elf
 *.map
 *.mem
+!mem/pynq_demo.mem
 *.o
 *.signature
 __pycache__/
-
