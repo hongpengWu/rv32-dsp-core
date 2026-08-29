@@ -58,6 +58,10 @@ always@(*)
             res = d1 & d2;
             choose_add_sub = 1'b0;
             end
+    `alu_andn: begin
+            res = d1 & d2_inv;
+            choose_add_sub = 1'b0;
+            end
     `alu_or: begin                                    //�?
             res = d1 | d2;
             choose_add_sub = 1'b0;

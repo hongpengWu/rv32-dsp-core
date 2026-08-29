@@ -26,6 +26,7 @@
 `define alu_sll                   4'b1000
 `define alu_srl                   4'b1001
 `define alu_sra                   4'b1010
+`define alu_andn                  4'b1011
 
 
 `define Performance_Count

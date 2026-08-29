@@ -21,8 +21,11 @@ module IDU(
     output             [   2: 0]        funct3                     ,
     output                              mret_flag                  ,
     output                              ecall_flag                 ,
+    output                              ebreak_flag                ,
     output                              fence_i_flag               ,
     output                              illegal_inst               ,
+    output             [  31: 0]        trap_cause                 ,
+    output             [  31: 0]        trap_tval                  ,
 
     output             [  31: 0]        branch_pc                  ,
     output             [  31: 0]        rs1_value                  ,
@@ -51,6 +54,9 @@ module IDU(
     output             [  31: 0]        mtvec_out                  ,
     output             [31:0]   pc_out,
 
+    input                               trap_fire                  ,
+    input                               mret_fire                  ,
+
 
     input                               valid_last                 ,
     output                              ready_last                 ,
@@ -72,6 +78,12 @@ module IDU(
     wire               [  31: 0]        imm_J                       ;
     wire               [  31: 0]        csrs                        ;
     wire               [  31: 0]        imm                         ;
+    wire               [  11: 0]        csr_addr12                  ;
+    wire                               csr_addr_supported            ;
+    wire                               csr_access                    ;
+    wire                               csr_write_req                 ;
+    wire                               csr_writeable                 ;
+    wire               [  31: 0]        csr_source                   ;
     reg                                legal_inst                  ;
 
     assign                              ready_last                  = ready_next;
@@ -88,7 +100,34 @@ module IDU(
 
     assign                              ecall_flag                  = (inst == 32'b00000000000000000000000001110011);//ecall
     assign                              mret_flag                   = (inst == 32'b00110000001000000000000001110011);// mret
+    assign                              ebreak_flag                  = (inst == 32'h0010_0073);
     assign                              fence_i_flag                = (inst == 32'b00000000000000000001000000001111);
+
+    assign                              csr_addr12                  = inst[31:20];
+    assign                              csr_addr_supported           = (csr_addr12 == 12'h300) ||
+                                                                       (csr_addr12 == 12'h305) ||
+                                                                       (csr_addr12 == 12'h341) ||
+                                                                       (csr_addr12 == 12'h342) ||
+                                                                       (csr_addr12 == 12'h343) ||
+                                                                       (csr_addr12 == 12'hf11) ||
+                                                                       (csr_addr12 == 12'hf12);
+    assign                              csr_access                   = (opcode == `M_opcode) &&
+                                                                       (funct3 != 3'b000) &&
+                                                                       csr_addr_supported;
+    assign                              csr_writeable                = (csr_addr12 == 12'h300) ||
+                                                                       (csr_addr12 == 12'h305) ||
+                                                                       (csr_addr12 == 12'h341) ||
+                                                                       (csr_addr12 == 12'h342);
+    assign                              csr_source                   = funct3[2] ?
+                                                                       {27'd0, rs1} : EXU_rs1_in;
+    assign                              csr_write_req                = csr_access &&
+                                                                       ((funct3 == 3'b001) ||
+                                                                        (funct3 == 3'b101) ||
+                                                                        (((funct3 == 3'b010) ||
+                                                                          (funct3 == 3'b011) ||
+                                                                          (funct3 == 3'b110) ||
+                                                                          (funct3 == 3'b111)) &&
+                                                                         (csr_source != 32'd0)));
 
     always @(*) begin
         legal_inst = 1'b0;
@@ -120,28 +159,27 @@ module IDU(
                                       (funct3 == 3'b100) || (funct3 == 3'b101) ||
                                       (funct3 == 3'b110) || (funct3 == 3'b111);
             `U0_opcode, `U1_opcode, `J_opcode: legal_inst = 1'b1;
-            `M_opcode: legal_inst = ecall_flag || mret_flag ||
-                                     (inst == 32'h0010_0073) ||
-                                     (funct3 == 3'b001) || (funct3 == 3'b010) ||
-                                     (funct3 == 3'b011) || (funct3 == 3'b101) ||
-                                     (funct3 == 3'b110) || (funct3 == 3'b111);
+            `M_opcode: legal_inst = ecall_flag || mret_flag || ebreak_flag || csr_access;
             7'b0001111: legal_inst = (funct3 == 3'b000) || (funct3 == 3'b001);
             default: legal_inst = 1'b0;
         endcase
     end
 
     assign                              illegal_inst                = valid_last && !legal_inst;
+    assign                              trap_cause                  = ecall_flag ? 32'd11 :
+                                                                       ebreak_flag ? 32'd3 : 32'd2;
+    assign                              trap_tval                   = illegal_inst ? inst : 32'd0;
 
-    assign                              csr_wen_next[0]             = legal_inst && (opcode == `M_opcode && funct3 != 3'b000 && imm == 32'h341);
-    assign                              csr_wen_next[1]             = legal_inst && (opcode == `M_opcode && funct3 != 3'b000 && imm == 32'h342);
-    assign                              csr_wen_next[2]             = legal_inst && (opcode == `M_opcode && funct3 != 3'b000 && imm == 32'h300);
-    assign                              csr_wen_next[3]             = legal_inst && (opcode == `M_opcode && funct3 != 3'b000 && imm == 32'h305);
+    assign                              csr_wen_next[0]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h341);
+    assign                              csr_wen_next[1]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h342);
+    assign                              csr_wen_next[2]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h300);
+    assign                              csr_wen_next[3]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h305);
 
     assign                              R_wen_next                  = legal_inst && ((opcode == `R_opcode) || (opcode == `I0_opcode) ||
                                                                        (opcode == `I1_opcode) || (opcode == `I2_opcode) ||
                                                                        (opcode == `U0_opcode) || (opcode == `U1_opcode) ||
                                                                        (opcode == `J_opcode) ||
-                                                                       (opcode == `M_opcode && funct3 != 3'b000));
+                                                                       csr_access);
     assign                              mem_wen                     = legal_inst && (opcode == `S_opcode);
     assign                              mem_ren                     = legal_inst && (opcode == `I0_opcode);
 
@@ -165,24 +203,31 @@ module IDU(
     assign                              inv_flag                    = legal_inst && (opcode == `B_opcode && (funct3 == 3'b101 || funct3 == 3'b111 || funct3 == 3'b000 ));
     assign                              branch_flag                 = legal_inst && (opcode == `B_opcode);
  
-    assign                              csr_addr                    = imm;
+    assign                              csr_addr                    = {20'd0, csr_addr12};
 
-    assign                              rd_value_next               = jump_flag? snpc: 
-                                                                    (|csr_wen_next)? csrs:
-                                                                    0;
+    assign                              rd_value_next               = jump_flag ? snpc :
+                                                                       csr_access ? csrs : 32'd0;
     assign                              branch_pc                   = pc + imm;
     assign pc_out  = pc;
 
-    assign add1_value = (opcode == `U0_opcode)? 0 :
+    assign add1_value = csr_access ?
+                        (((funct3 == 3'b001) || (funct3 == 3'b101)) ? csr_source : csrs) :
+                        (opcode == `U0_opcode)? 0 :
                         (opcode == `J_opcode || opcode == `U1_opcode )? pc :
                         EXU_rs1_in;
 
-    assign add2_value = (opcode == `R_opcode || opcode == `B_opcode)?  EXU_rs2_in :
+    assign add2_value = csr_access ?
+                        (((funct3 == 3'b001) || (funct3 == 3'b101)) ? 32'd0 : csr_source) :
+                        (opcode == `R_opcode || opcode == `B_opcode)?  EXU_rs2_in :
                         (opcode == `M_opcode && funct3 == 3'b010)? rd_value_next :
                         (opcode == `M_opcode && funct3 == 3'b001)? 0 : imm;
  
 
-    assign alu_opcode = (opcode == `S_opcode ||  opcode == `I0_opcode 
+    assign alu_opcode = csr_access ?
+                        (((funct3 == 3'b001) || (funct3 == 3'b101)) ? `alu_add :
+                         ((funct3 == 3'b010) || (funct3 == 3'b110)) ? `alu_or :
+                         `alu_andn) :
+                        (opcode == `S_opcode ||  opcode == `I0_opcode
                         || opcode == `U0_opcode || opcode == `U1_opcode
                         || opcode == `J_opcode || opcode == `I2_opcode
                         || (opcode ==`I1_opcode  &&  funct3 == 3'b000)  || (opcode == `R_opcode         &&
@@ -228,15 +273,18 @@ module IDU(
                  (opcode == `U0_opcode || opcode == `U1_opcode)? imm_U:
                  (opcode == `J_opcode)? imm_J:
                  (opcode == `B_opcode)? imm_B:
-                 (opcode == `S_opcode)? imm_S: 
-                 (opcode == `S_opcode)? imm_R :
+                 (opcode == `S_opcode)? imm_S:
                   0;
 
 Reg_Stack Reg_Stack_inst0(
     .reset                              (reset                     ),
     .clock                              (clock                     ),
     .pc                                 (pc                        ),
-    .ecall_flag                         (ecall_flag                ),
+    .trap_fire                          (trap_fire                 ),
+    .trap_pc                            (pc                        ),
+    .trap_cause                         (trap_cause                ),
+    .trap_tval                          (trap_tval                 ),
+    .mret_fire                          (mret_fire                 ),
 
     .rs1                                (rs1                       ),
     .rs2                                (rs2                       ),
@@ -253,7 +301,8 @@ Reg_Stack Reg_Stack_inst0(
     .a0_value                           (a0_value                  ),
     .csrs                               (csrs                      ),
     .mepc_out                           (mepc_out                  ),
-    .mtvec_out                          (mtvec_out                 ) 
+    .mtvec_out                          (mtvec_out                 ),
+    .mtval_out                           ()
 );
 
 

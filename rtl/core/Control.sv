@@ -18,6 +18,8 @@ module Control (
     input                               jump_flag                  ,
     input                               mret_flag                  ,
     input                               ecall_flag                 ,
+    input                               ebreak_flag                ,
+    input                               illegal_inst               ,
     input                               MEM_mem_ren                ,
     input                               fence_i_flag               ,
 
@@ -45,7 +47,9 @@ module Control (
     output                              icache_clr                 ,
     output                              EXU_inst_clear             ,
     output             [  31: 0]        dnpc                       ,
-    output                              dnpc_flag                   
+    output                              dnpc_flag                  ,
+    output                              trap_fire                  ,
+    output                              mret_fire
 );
 
 
@@ -57,17 +61,27 @@ module Control (
     wire exu_branch_taken = EXU_valid && branch_flag && Ex_result[0];
     wire exu_jump         = EXU_valid && jump_flag;
     wire exu_fence_i      = EXU_valid && fence_i_flag;
+    wire older_redirect   = exu_branch_taken || exu_jump;
     wire idu_mret         = IDU_valid && mret_flag;
     wire idu_ecall        = IDU_valid && ecall_flag;
+    wire idu_ebreak       = IDU_valid && ebreak_flag;
+    wire idu_trap         = idu_ecall || idu_ebreak || illegal_inst;
+    wire trap_event       = !older_redirect && idu_trap;
+    wire mret_event       = !older_redirect && idu_mret;
+
+    assign trap_fire      = trap_event;
+    assign mret_fire      = mret_event;
 
     assign                              dnpc_flag                   = exu_branch_taken ||
                                                                        exu_jump ||
-                                                                       idu_mret ||
-                                                                       idu_ecall;
+                                                                       mret_event ||
+                                                                       trap_event;
     assign                              EXU_inst_clear              = exu_branch_taken ||
                                                                        exu_jump ||
                                                                        exu_fence_i ||
-                                                                       IFU_stall;
+                                                                       IFU_stall ||
+                                                                       trap_event ||
+                                                                       mret_event;
     assign                              IFU_stall                   = IDU_valid && EXU_valid &&
                                                                        EXU_mem_ren &&
                                                                        (EXU_rd != 5'd0) &&
@@ -80,8 +94,8 @@ module Control (
 
     assign                              dnpc                        = exu_jump ? Ex_result :
                                                                        exu_branch_taken ? branch_pc :
-                                                                       idu_mret ? mepc_out :
-                                                                       mtvec_out;
+                                                                       mret_event ? mepc_out :
+                                                                       trap_event ? mtvec_out : 32'b0;
 
 
 
@@ -118,4 +132,3 @@ Data_hazard Data_hazard_inst(
 );
 
 endmodule                                                           //PC_Control
-

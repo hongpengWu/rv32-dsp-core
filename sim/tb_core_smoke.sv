@@ -57,14 +57,28 @@ module tb_core_smoke;
             imem[i] = 32'h0000_006f;
         end
 
-        imem[0] = 32'h0050_0013; // addi x0, x0, 5 (must be discarded)
-        imem[1] = 32'h0050_0093; // addi x1, x0, 5
-        imem[2] = 32'h0000_837f; // illegal opcode, rd=x6, rs1=x1
-        imem[3] = 32'h0070_0113; // addi x2, x0, 7
-        imem[4] = 32'h0020_81b3; // add  x3, x1, x2
-        imem[5] = 32'h8010_0237; // lui  x4, 0x80100
-        imem[6] = 32'h0032_2023; // sw   x3, 0(x4)
-        imem[7] = 32'h0000_006f; // jal  x0, 0
+        imem[0] = 32'h8000_02b7; // lui  x5, 0x80000
+        imem[1] = 32'h0402_8293; // addi x5, x5, 64 (trap handler)
+        imem[2] = {12'h305, 5'd5, 3'b001, 5'd0, 7'b1110011}; // csrrw x0, mtvec, x5
+        imem[3] = 32'h0000_0013; // nop
+        imem[4] = 32'h0000_0013; // nop
+        imem[5] = 32'h0050_0093; // addi x1, x0, 5
+        imem[6] = 32'h0000_837f; // illegal opcode, rd=x6, rs1=x1
+        imem[7] = 32'h0070_0113; // addi x2, x0, 7
+        imem[8] = 32'h0020_81b3; // add  x3, x1, x2
+        imem[9] = 32'h8010_0237; // lui  x4, 0x80100
+        imem[10] = 32'h0032_2023; // sw   x3, 0(x4)
+        imem[11] = 32'h0000_006f; // jal  x0, 0
+
+        imem[16] = {12'h341, 5'd0, 3'b010, 5'd7, 7'b1110011}; // csrrs x7, mepc, x0
+        imem[17] = 32'h0043_8393; // addi x7, x7, 4
+        imem[18] = {12'h341, 5'd7, 3'b001, 5'd0, 7'b1110011}; // csrrw x0, mepc, x7
+        imem[19] = 32'h0000_0013;
+        imem[20] = 32'h0000_0013;
+        imem[21] = 32'h0000_0013;
+        imem[22] = 32'h0000_0013;
+        imem[23] = 32'h3020_0073; // mret
+        imem[24] = 32'h0000_006f;
 
         repeat (5) @(posedge clk);
         rst = 1'b0;
@@ -100,13 +114,13 @@ module tb_core_smoke;
                 $fatal(1, "SMOKE FAIL: illegal instruction wrote x6=%08x", debug_wb_value);
             end
 
-            if (saw_expected_store && cycles >= 16) begin
+            if (saw_expected_store && cycles >= 40) begin
                 $display("SMOKE PASS: cycle=%0d expected_store=80100000/0000000c stores=%0d",
                          cycles, store_count);
                 $finish;
             end
 
-            if (cycles >= 100) begin
+            if (cycles >= 300) begin
                 $fatal(1, "SMOKE TIMEOUT: no expected store observed");
             end
         end

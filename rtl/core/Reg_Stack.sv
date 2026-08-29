@@ -2,7 +2,11 @@ module Reg_Stack(
     input                                  reset                      ,
     input                                  clock                      ,
     input              [  31: 0]           pc                         ,
-    input                                  ecall_flag                 ,
+    input                                  trap_fire                  ,
+    input              [  31: 0]           trap_pc                    ,
+    input              [  31: 0]           trap_cause                 ,
+    input              [  31: 0]           trap_tval                  ,
+    input                                  mret_fire                  ,
 
     input              [   4: 0]           rs1                        ,
     input              [   4: 0]           rs2                        ,
@@ -20,7 +24,8 @@ module Reg_Stack(
     output             [  31: 0]           a0_value                   ,
     output             [  31: 0]           csrs                       ,
     output             [  31: 0]           mepc_out                   ,
-    output             [  31: 0]           mtvec_out                   
+    output             [  31: 0]           mtvec_out                  ,
+    output             [  31: 0]           mtval_out
 );
 
     wire               [  31: 0]        wdata                       ;
@@ -37,6 +42,7 @@ module Reg_Stack(
                                                              (csr_addr == 32'h342)? mcause_out      :
                                                              (csr_addr == 32'h300)? mstatus_out     :
                                                              (csr_addr == 32'h305)? mtvec_out       :
+                                                             (csr_addr == 32'h343)? mtval_out       :
                                                              (csr_addr == 32'hf11)?mvendorid_out    :
                                                              (csr_addr == 32'hf12)?marchid_out:32'd0;
 
@@ -46,17 +52,19 @@ CSR #(32,0) CSR_inst(
     .clock                              (clock                     ),
     .reset                              (reset                     ),
 
-    .pc                                 (pc                        ),
-    .ecall_flag                         (ecall_flag                ),
     .csrd                               (csrd                      ),
-
-
     .csr_wen                            (csr_wen                   ),
+    .trap_fire                          (trap_fire                 ),
+    .trap_pc                            (trap_pc                   ),
+    .trap_cause                         (trap_cause                ),
+    .trap_tval                          (trap_tval                 ),
+    .mret_fire                          (mret_fire                 ),
     
     .mvendorid_out                      (mvendorid_out             ),
     .marchid_out                        (marchid_out               ),
     .mepc_out                           (mepc_out                  ),
     .mcause_out                         (mcause_out                ),
+    .mtval_out                          (mtval_out                  ),
     .mstatus_out                        (mstatus_out               ),
     .mtvec_out                          (mtvec_out                 ) 
 

@@ -15,6 +15,8 @@ module tb_control_hazard;
     logic        jump_flag;
     logic        mret_flag;
     logic        ecall_flag;
+    logic        ebreak_flag;
+    logic        illegal_inst;
     logic        MEM_mem_ren;
     logic        fence_i_flag;
     logic [4:0]  IDU_rs1;
@@ -36,6 +38,8 @@ module tb_control_hazard;
     logic        EXU_inst_clear;
     logic [31:0] dnpc;
     logic        dnpc_flag;
+    logic        trap_fire;
+    logic        mret_fire;
 
     Control dut (.*);
 
@@ -64,6 +68,8 @@ module tb_control_hazard;
         jump_flag = 1'b0;
         mret_flag = 1'b0;
         ecall_flag = 1'b0;
+        ebreak_flag = 1'b0;
+        illegal_inst = 1'b0;
         MEM_mem_ren = 1'b0;
         fence_i_flag = 1'b0;
         IDU_rs1 = 5'd5;

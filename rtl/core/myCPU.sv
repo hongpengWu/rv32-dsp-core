@@ -33,6 +33,9 @@ module myCPU (
   wire [ 2:0] IDU_funct3;
   wire        IDU_mret_flag;
   wire        IDU_ecall_flag;
+  wire        IDU_ebreak_flag;
+  wire [31:0] IDU_trap_cause;
+  wire [31:0] IDU_trap_tval;
   wire [31:0] IDU_rs2_value;
   wire [31:0] IDU_rs1_value;
   wire [ 3:0] IDU_csr_wen;
@@ -113,6 +116,8 @@ module myCPU (
   wire [31:0] dnpc;
   wire IFU_stall;
   wire icache_clr;
+  wire trap_fire;
+  wire mret_fire;
 
   assign irom_addr = IFU_pc;
 
@@ -157,6 +162,8 @@ assign debug_wb_value = WBU_rd_value;
       .jump_flag   (EXU_jump_flag),
       .mret_flag   (IDU_mret_flag),
       .ecall_flag  (IDU_ecall_flag),
+      .ebreak_flag (IDU_ebreak_flag),
+      .illegal_inst(IDU_illegal_inst),
       .fence_i_flag(EXU_fence_i_flag),
 
       .MEM_mem_ren(LSU_mem_ren),
@@ -182,7 +189,9 @@ assign debug_wb_value = WBU_rd_value;
       .dnpc          (dnpc),
       .icache_clr    (icache_clr),
       .EXU_inst_clear(EXU_inst_clear),
-      .dnpc_flag     (dnpc_flag)
+      .dnpc_flag     (dnpc_flag),
+      .trap_fire     (trap_fire),
+      .mret_fire     (mret_fire)
   );
 
 
@@ -208,8 +217,11 @@ assign debug_wb_value = WBU_rd_value;
       .funct3      (IDU_funct3),
       .mret_flag   (IDU_mret_flag),
       .ecall_flag  (IDU_ecall_flag),
+      .ebreak_flag (IDU_ebreak_flag),
       .fence_i_flag(IDU_fence_i_flag),
       .illegal_inst(IDU_illegal_inst),
+      .trap_cause  (IDU_trap_cause),
+      .trap_tval   (IDU_trap_tval),
 
       .add2_value   (IDU_add2_value),
       .add1_value   (IDU_add1_value),
@@ -234,6 +246,8 @@ assign debug_wb_value = WBU_rd_value;
       .a0_value (IDU_a0_value),
       .mepc_out (IDU_mepc_out),
       .mtvec_out(IDU_mtvec_out),
+      .trap_fire (trap_fire),
+      .mret_fire (mret_fire),
 
 
       .valid_last(IFU_valid),
