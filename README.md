@@ -81,6 +81,16 @@ offsets, JAL/JALR link values, JALR bit-zero clearing, and wrong-path flushing.
 All simulation scripts require an explicit testbench pass marker because XSim
 can return process exit code zero after a SystemVerilog `$fatal`.
 
+Run the complete PL-only strict regression:
+
+```powershell
+.\scripts\run_pl_strict.ps1
+```
+
+The strict entry point runs every current test, requires its pass marker, and
+fails on tool errors, simulator warnings, fatal messages, or X/Z detection in
+the PYNQ integration test. It does not require a RISC-V compiler or a board.
+
 Create a local Vivado project when GUI inspection is useful:
 
 ```powershell
@@ -122,3 +132,12 @@ This first milestone is intentionally PL-only, so Vivado reports the expected
 prevent bitstream generation or PL configuration. The PYNQ-Z2 manual confirms
 that the push-buttons are active-high when pressed and the individual LEDs are
 active-high.
+
+The board-only procedure is tracked separately in
+`docs/hardware-deployment-checklist.md` and can be completed when the PYNQ-Z2
+arrives.
+
+The optional `rv32_pl_controlled` shell reserves start, reset, done, cycle, and
+retirement-counter signals for a future PS7/AXI-Lite adapter. It is verified as
+a standalone PL module today; the current board top remains
+`rv32_pynq_z2_demo`, so no PS, Linux, or board is required for the regression.

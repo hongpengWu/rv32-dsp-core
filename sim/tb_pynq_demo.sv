@@ -5,6 +5,10 @@ module tb_pynq_demo;
     logic [3:0] btn = 4'b0001;
     logic [3:0] led;
     integer i;
+    localparam logic [31:0] RESET_PC = 32'h8000_0000;
+    localparam logic [31:0] DATA_BASE = 32'h8010_0000;
+    localparam logic [31:0] DATA_END = 32'h8010_0100;
+    localparam logic [31:0] LED_ADDR = 32'h8020_0040;
 
     always #5 sys_clk = ~sys_clk;
 
@@ -39,6 +43,36 @@ module tb_pynq_demo;
         .led     (led)
     );
 
+    // These checks turn common integration mistakes into deterministic test
+    // failures instead of allowing an X/Z value to be hidden by === checks.
+    always @(posedge sys_clk) begin
+        #1;
+        if (!$isunknown({dut.cpu_rst, dut.irom_addr, dut.irom_data,
+                         dut.perip_addr, dut.perip_wen, dut.perip_rdata,
+                         led})) begin
+            if (dut.irom_addr < RESET_PC || dut.irom_addr >= RESET_PC + 256)
+                $fatal(1, "instruction address escaped ROM: %h", dut.irom_addr);
+            if (dut.perip_wen &&
+                !((dut.perip_addr >= DATA_BASE && dut.perip_addr < DATA_END) ||
+                  (dut.perip_addr == LED_ADDR)))
+                $fatal(1, "write escaped PL address map: %h", dut.perip_addr);
+            if (dut.perip_wen && dut.perip_addr == LED_ADDR &&
+                (dut.perip_mask !== 2'b10 || $isunknown(dut.perip_wdata)))
+                $fatal(1, "LED write was not a full-word store");
+            if (dut.perip_wen && dut.perip_addr != LED_ADDR &&
+                $isunknown({dut.perip_mask, dut.perip_wdata}))
+                $fatal(1, "X/Z detected on an active data write");
+            if (btn[0] && !dut.cpu_rst)
+                $fatal(1, "reset synchronizer released while BTN0 is pressed");
+        end else if ($time > 0) begin
+            $display("X/Z PL signals at %0t: rst=%b iaddr=%h idata=%h paddr=%h wen=%b mask=%b wdata=%h rdata=%h led=%h",
+                     $time, dut.cpu_rst, dut.irom_addr, dut.irom_data,
+                     dut.perip_addr, dut.perip_wen, dut.perip_mask,
+                     dut.perip_wdata, dut.perip_rdata, led);
+            $fatal(1, "X/Z detected on PL integration signals at %0t", $time);
+        end
+    end
+
     initial begin
         for (i = 0; i < 64; i = i + 1)
             dut.imem.mem[i] = 32'h0000_0013;
@@ -50,6 +84,13 @@ module tb_pynq_demo;
 
         repeat (5) @(posedge sys_clk);
         btn[0] = 1'b0;
+
+        repeat (3) @(posedge sys_clk);
+        if (!dut.cpu_rst)
+            $fatal(1, "reset released too early");
+        @(posedge sys_clk);
+        if (dut.cpu_rst)
+            $fatal(1, "reset synchronizer did not release after four clocks");
 
         for (i = 0; i < 100; i = i + 1) begin
             @(posedge sys_clk);
