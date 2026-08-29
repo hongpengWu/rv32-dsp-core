@@ -91,6 +91,17 @@ The strict entry point runs every current test, requires its pass marker, and
 fails on tool errors, simulator warnings, fatal messages, or X/Z detection in
 the PYNQ integration test. It does not require a RISC-V compiler or a board.
 
+The synchronous-memory migration is exercised separately with:
+
+```powershell
+.\scripts\run_sync_mem_xsim.ps1
+.\scripts\run_cpu_sync_xsim.ps1
+```
+
+`myCPU_sync` is a parallel migration top; the compatibility `myCPU` and the
+current PYNQ demo remain unchanged until the synchronous path has accumulated
+the same architectural coverage.
+
 Create a local Vivado project when GUI inspection is useful:
 
 ```powershell

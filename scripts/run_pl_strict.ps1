@@ -14,6 +14,7 @@ $tests = @(
     @{ Name = 'load-store'; Script = 'run_load_store_xsim.ps1'; Pass = 'LOAD/STORE PASS:' },
     @{ Name = 'system-trap'; Script = 'run_system_xsim.ps1'; Pass = 'SYSTEM PASS:' },
     @{ Name = 'sync-memory-model'; Script = 'run_sync_mem_xsim.ps1'; Pass = 'SYNC MEM PASS:' },
+    @{ Name = 'sync-core'; Script = 'run_cpu_sync_xsim.ps1'; Pass = 'SYNC CORE PASS:' },
     @{ Name = 'pynq-pl-demo'; Script = 'run_pynq_demo_xsim.ps1'; Pass = 'PYNQ DEMO PASS:' },
     @{ Name = 'controlled-pl-shell'; Script = 'run_pl_controlled_xsim.ps1'; Pass = 'CONTROLLED PL PASS:' }
 )
