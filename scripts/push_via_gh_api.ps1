@@ -124,7 +124,10 @@ foreach ($commit in $commits) {
     }
 
     $message = (@(& git -C $repoRoot show -s --format=%B $commit) -join "`n").TrimEnd()
-    $parents = if ($null -eq $remoteParent) { @() } else { @($remoteParent) }
+    $parents = [System.Collections.Generic.List[string]]::new()
+    if ($null -ne $remoteParent) {
+        $parents.Add($remoteParent)
+    }
     $newCommit = Invoke-GhJson -Endpoint "repos/$Repository/git/commits" -Body @{
         message   = $message
         tree      = $tree.sha
