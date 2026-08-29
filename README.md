@@ -58,6 +58,16 @@ From PowerShell:
 The smoke test uses hand-encoded RV32I instructions, so it does not require a
 RISC-V compiler. It is only a build/integration check, not ISA compliance.
 
+Run the current directed RV32I arithmetic test:
+
+```powershell
+.\scripts\run_directed_xsim.ps1
+```
+
+This test also uses hand-encoded instructions and checks 24 register results
+through store addresses. It is a focused regression, not a substitute for the
+official architectural tests.
+
 Create a local Vivado project when GUI inspection is useful:
 
 ```powershell
@@ -66,4 +76,3 @@ Create a local Vivado project when GUI inspection is useful:
 ```
 
 Generated projects and simulation files go under `build/` and are not tracked.
-
