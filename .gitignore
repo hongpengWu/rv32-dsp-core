@@ -1,0 +1,25 @@
+# Vivado and XSim generated files
+.Xil/
+build/
+*.jou
+*.log
+*.pb
+*.str
+*.wdb
+*.xpr
+*.cache/
+*.gen/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+
+# Generated software and test artifacts
+*.bin
+*.elf
+*.map
+*.mem
+*.o
+*.signature
+__pycache__/
+
