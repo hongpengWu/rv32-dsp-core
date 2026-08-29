@@ -33,8 +33,8 @@ assign pc_out = pc;
 
   assign valid_next    = valid;
   assign rd_value_next = (jump_flag | (|csr_wen)) ? rd_value : (mem_ren) ? MEM_Rdata : Ex_result;
-  assign csrd          = Ex_result;
-  assign csr_wen_next  = csr_wen;
+  assign csrd          = valid ? Ex_result : 32'b0;
+  assign csr_wen_next  = valid ? csr_wen : 4'b0;
   assign R_wen_next    = R_wen & valid;
   assign rd_next       = rd;
   assign ready         = 1'b1;

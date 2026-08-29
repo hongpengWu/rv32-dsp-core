@@ -66,7 +66,7 @@ module LSU (
 
   always @(posedge clock) begin
     if (reset) valid_next <= 1'b0;
-    else valid_next <= valid_last;
+    else valid_next <= valid_last && ready_next;
 
   end
   always @(posedge clock) begin
@@ -107,10 +107,10 @@ module LSU (
   assign addr           = Ex_result_reg;
   assign wdata          = rs2_value_reg;
   assign LSU_Rdata      = rdata_ex;
-  assign wen            = mem_wen_reg;
+  assign wen            = valid_next && mem_wen_reg;
 
 
-  assign mask           = funct3_reg[1:0];
+  assign mask           = valid_next ? funct3_reg[1:0] : 2'b00;
 
 
 
@@ -123,11 +123,11 @@ module LSU (
   assign Ex_result_next = Ex_result_reg;
   assign rd_value_next  = rd_value_reg;
   assign rd_next        = rd_reg;
-  assign mem_ren_next   = mem_ren_reg;
+  assign mem_ren_next   = valid_next && mem_ren_reg;
 
-  assign R_wen_next     = R_wen_reg;
-  assign jump_flag_next = jump_flag_reg;
-  assign csr_wen_next   = csr_wen_reg;
+  assign R_wen_next     = valid_next && R_wen_reg;
+  assign jump_flag_next = valid_next && jump_flag_reg;
+  assign csr_wen_next   = valid_next ? csr_wen_reg : 4'b0;
 
 
 
@@ -167,4 +167,3 @@ module LSU (
 
 
 endmodule  //MEM
-

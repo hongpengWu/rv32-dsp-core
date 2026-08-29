@@ -19,15 +19,29 @@ module Data_hazard(
     output             [   1: 0] IDU_rs2_choice              
 );
 
-assign IDU_rs1_choice = (EXU_R_Wen && (EXU_rd == IDU_rs1 && EXU_rd != 0 ))? 
-                        2'b01:(MEM_R_Wen && (MEM_rd == IDU_rs1 ) && (MEM_rd!=0))? 
-                        (MEM_mem_ren? 2'b011:2'b10):2'b000;
+/*
+ * Forwarding is only meaningful for an instruction that is actually in the
+ * decode stage and for producer stages carrying a valid instruction.  The
+ * pipeline registers intentionally retain their data while a bubble is
+ * present, so omitting these valid checks can forward an old rd/control bit.
+ */
+wire exu_rs1_match = IDU_valid && EXU_valid && EXU_R_Wen &&
+                     (EXU_rd != 5'd0) && (EXU_rd == IDU_rs1);
+wire mem_rs1_match = IDU_valid && MEM_valid && MEM_R_Wen &&
+                     (MEM_rd != 5'd0) && (MEM_rd == IDU_rs1);
+wire exu_rs2_match = IDU_valid && EXU_valid && EXU_R_Wen &&
+                     (EXU_rd != 5'd0) && (EXU_rd == IDU_rs2);
+wire mem_rs2_match = IDU_valid && MEM_valid && MEM_R_Wen &&
+                     (MEM_rd != 5'd0) && (MEM_rd == IDU_rs2);
 
-assign IDU_rs2_choice = (EXU_R_Wen && (EXU_rd == IDU_rs2 && EXU_rd != 0 ))? 
-                        2'b01:(MEM_R_Wen && (MEM_rd == IDU_rs2 ) && (MEM_rd!=0))? 
-                        (MEM_mem_ren? 2'b011:2'b10):2'b000;
+assign IDU_rs1_choice = exu_rs1_match ? 2'b01 :
+                        mem_rs1_match ? (MEM_mem_ren ? 2'b11 : 2'b10) :
+                        2'b00;
+
+assign IDU_rs2_choice = exu_rs2_match ? 2'b01 :
+                        mem_rs2_match ? (MEM_mem_ren ? 2'b11 : 2'b10) :
+                        2'b00;
 
 endmodule                                                           //Aribter
-
 
 

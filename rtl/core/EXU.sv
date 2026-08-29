@@ -148,21 +148,21 @@ end
     wire               [  31: 0]        alu_res                     ;
     
 
-    assign                              jump_flag_next              = jump_flag_reg;
+    assign                              jump_flag_next              = valid_next && jump_flag_reg;
     assign                              funct3_next                 = funct3_reg;
     assign                              rd_next                     = rd_reg;
     assign                              rd_value_next               = rd_value_reg;
-    assign                              csr_wen_next                = csr_wen_reg;
-    assign                              R_wen_next                  = R_wen_reg;
-    assign                              mem_wen_next                = mem_wen_reg;
-    assign                              mem_ren_next                = mem_ren_reg;
+    assign                              csr_wen_next                = valid_next ? csr_wen_reg : 4'b0;
+    assign                              R_wen_next                  = valid_next && R_wen_reg;
+    assign                              mem_wen_next                = valid_next && mem_wen_reg;
+    assign                              mem_ren_next                = valid_next && mem_ren_reg;
     assign                              EX_result                   = jump_flag_reg ?
                                                                       {alu_res[31:1], 1'b0} :
                                                                       alu_res ^ {31'd0,inv_flag_reg};
     assign                              rs2_value_next              = rs2_value_reg;
-    assign                              branch_flag_next            = branch_flag_reg;
+    assign                              branch_flag_next            = valid_next && branch_flag_reg;
     assign                              ready_last                  = ready_next;
-    assign                              fetch_i_flag_next           = fetch_i_reg;
+    assign                              fetch_i_flag_next           = valid_next && fetch_i_reg;
     assign                              branch_pc_next              = branch_pc_reg;
 
 
@@ -178,4 +178,3 @@ ALU #(
 );
 
 endmodule
-

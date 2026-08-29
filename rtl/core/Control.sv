@@ -52,15 +52,34 @@ module Control (
 
 
 
-    assign                              dnpc_flag                   = (branch_flag&Ex_result[0])?  1'b1:(((jump_flag|fence_i_flag)) | (mret_flag|ecall_flag));
-    assign                              EXU_inst_clear              = (branch_flag&Ex_result[0])?  1'b1: jump_flag|fence_i_flag|IFU_stall;
-    assign                              IFU_stall                   = EXU_mem_ren && (((EXU_rd == IDU_rs1) || (EXU_rd == IDU_rs2)  ) && (EXU_rd!=0));
+    wire exu_branch_taken = EXU_valid && branch_flag && Ex_result[0];
+    wire exu_jump         = EXU_valid && jump_flag;
+    wire exu_fence_i      = EXU_valid && fence_i_flag;
+    wire idu_mret         = IDU_valid && mret_flag;
+    wire idu_ecall        = IDU_valid && ecall_flag;
+
+    assign                              dnpc_flag                   = exu_branch_taken ||
+                                                                       exu_jump ||
+                                                                       idu_mret ||
+                                                                       idu_ecall;
+    assign                              EXU_inst_clear              = exu_branch_taken ||
+                                                                       exu_jump ||
+                                                                       exu_fence_i ||
+                                                                       IFU_stall;
+    assign                              IFU_stall                   = IDU_valid && EXU_valid &&
+                                                                       EXU_mem_ren &&
+                                                                       (EXU_rd != 5'd0) &&
+                                                                       ((EXU_rd == IDU_rs1) ||
+                                                                        (EXU_rd == IDU_rs2));
 
 
-    assign                              icache_clr                  = fence_i_flag&EXU_valid;
+    assign                              icache_clr                  = exu_fence_i;
 
 
-    assign                              dnpc                        = (jump_flag? Ex_result : branch_flag?  branch_pc: mret_flag? mepc_out:mtvec_out);
+    assign                              dnpc                        = exu_jump ? Ex_result :
+                                                                       exu_branch_taken ? branch_pc :
+                                                                       idu_mret ? mepc_out :
+                                                                       mtvec_out;
 
 
 
@@ -95,6 +114,5 @@ Data_hazard Data_hazard_inst(
 );
 
 endmodule                                                           //PC_Control
-
 
 

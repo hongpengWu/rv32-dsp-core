@@ -22,6 +22,8 @@ module tb_core_smoke;
     logic [31:0] imem [0:IMEM_WORDS-1];
     integer i;
     integer cycles;
+    integer store_count;
+    logic   saw_expected_store;
 
     always #5 clk = ~clk;
 
@@ -66,29 +68,42 @@ module tb_core_smoke;
 
         repeat (5) @(posedge clk);
         rst = 1'b0;
+        store_count = 0;
+        saw_expected_store = 1'b0;
     end
 
     always @(posedge clk) begin
         if (rst) begin
             cycles <= 0;
+            store_count <= 0;
+            saw_expected_store <= 1'b0;
         end else begin
             cycles <= cycles + 1;
 
             if (perip_wen) begin
+                if (store_count != 0) begin
+                    $fatal(1, "SMOKE FAIL: repeated store at cycle=%0d", cycles);
+                end
+                store_count <= store_count + 1;
                 if ((perip_addr === 32'h8010_0000) &&
                     (perip_wdata === 32'd12) &&
                     (perip_mask === 2'b10)) begin
-                    $display("SMOKE PASS: cycle=%0d addr=%08x data=%08x",
-                             cycles, perip_addr, perip_wdata);
-                    $finish;
+                    saw_expected_store <= 1'b1;
+                end else begin
+                    $fatal(1, "SMOKE FAIL: cycle=%0d addr=%08x data=%08x mask=%b",
+                           cycles, perip_addr, perip_wdata, perip_mask);
                 end
 
-                $fatal(1, "SMOKE FAIL: cycle=%0d addr=%08x data=%08x mask=%b",
-                       cycles, perip_addr, perip_wdata, perip_mask);
             end
 
             if (debug_wb_have_inst && debug_wb_ena && (debug_wb_reg === 5'd6)) begin
                 $fatal(1, "SMOKE FAIL: illegal instruction wrote x6=%08x", debug_wb_value);
+            end
+
+            if (saw_expected_store && cycles >= 16) begin
+                $display("SMOKE PASS: cycle=%0d expected_store=80100000/0000000c stores=%0d",
+                         cycles, store_count);
+                $finish;
             end
 
             if (cycles >= 100) begin
