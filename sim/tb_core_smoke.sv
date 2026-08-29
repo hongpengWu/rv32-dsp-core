@@ -55,19 +55,13 @@ module tb_core_smoke;
             imem[i] = 32'h0000_006f;
         end
 
-        // The legacy register file does not force x0 to zero at read time.
-        // Retiring several writes to x0 makes the unchanged baseline testable.
-        imem[0] = 32'h0000_0013; // addi x0, x0, 0
-        imem[1] = 32'h0000_0013;
-        imem[2] = 32'h0000_0013;
-        imem[3] = 32'h0000_0013;
-        imem[4] = 32'h0000_0013;
-        imem[5] = 32'h0050_0093; // addi x1, x0, 5
-        imem[6] = 32'h0070_0113; // addi x2, x0, 7
-        imem[7] = 32'h0020_81b3; // add  x3, x1, x2
-        imem[8] = 32'h8010_0237; // lui  x4, 0x80100
-        imem[9] = 32'h0032_2023; // sw   x3, 0(x4)
-        imem[10] = 32'h0000_006f; // jal  x0, 0
+        imem[0] = 32'h0050_0013; // addi x0, x0, 5 (must be discarded)
+        imem[1] = 32'h0050_0093; // addi x1, x0, 5
+        imem[2] = 32'h0070_0113; // addi x2, x0, 7
+        imem[3] = 32'h0020_81b3; // add  x3, x1, x2
+        imem[4] = 32'h8010_0237; // lui  x4, 0x80100
+        imem[5] = 32'h0032_2023; // sw   x3, 0(x4)
+        imem[6] = 32'h0000_006f; // jal  x0, 0
 
         repeat (5) @(posedge clk);
         rst = 1'b0;
@@ -98,4 +92,3 @@ module tb_core_smoke;
         end
     end
 endmodule
-

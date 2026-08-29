@@ -31,7 +31,7 @@ module Reg_Stack(
     wire               [  31: 0]        marchid_out                 ;
 
 
-    assign                              wdata                       = (rd == 4'd0)? 32'd0:rd_value;
+    assign                              wdata                       = rd_value;
 
     assign                       csrs                      = (csr_addr == 32'h341)? mepc_out        :
                                                              (csr_addr == 32'h342)? mcause_out      :
@@ -79,4 +79,3 @@ RegisterFile #(5, 32) Reg_inst(
 
 
 endmodule
-

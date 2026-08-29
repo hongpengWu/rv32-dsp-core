@@ -22,9 +22,10 @@ the PYNQ-Z2 device family. The hand-encoded smoke test completed with:
 SMOKE PASS: cycle=11 addr=80100000 data=0000000c
 ```
 
-The test contains several writes to x0 before useful work because the legacy
-register file does not force x0 to zero at read time. This workaround will be
-removed after the first architectural fix.
+The baseline commit contains several writes to x0 before useful work because
+the legacy register file does not force x0 to zero at read time. The first
+architectural fix removes this workaround and tests that writes to x0 are
+discarded.
 
 ## Confirmed RTL issues
 
@@ -57,4 +58,3 @@ global `1ns/1ps` default so that the preserved baseline elaborates under Vivado
 The original placed design used 44,621 LUTs, including 32,768 LUTs as memory,
 and used no BRAM or DSP48 resources. The clean PYNQ design must regenerate both
 memories as synchronous block RAM before adding DSP hardware.
-
