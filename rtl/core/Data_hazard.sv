@@ -3,6 +3,8 @@
 module Data_hazard(
     input              [   4: 0] IDU_rs1                    ,
     input              [   4: 0] IDU_rs2                    ,
+    input                        IDU_uses_rs1               ,
+    input                        IDU_uses_rs2               ,
 
     input              [   4: 0] EXU_rd                     ,
     input              [   4: 0] MEM_rd                     ,
@@ -25,13 +27,13 @@ module Data_hazard(
  * pipeline registers intentionally retain their data while a bubble is
  * present, so omitting these valid checks can forward an old rd/control bit.
  */
-wire exu_rs1_match = IDU_valid && EXU_valid && EXU_R_Wen &&
+wire exu_rs1_match = IDU_valid && IDU_uses_rs1 && EXU_valid && EXU_R_Wen &&
                      (EXU_rd != 5'd0) && (EXU_rd == IDU_rs1);
-wire mem_rs1_match = IDU_valid && MEM_valid && MEM_R_Wen &&
+wire mem_rs1_match = IDU_valid && IDU_uses_rs1 && MEM_valid && MEM_R_Wen &&
                      (MEM_rd != 5'd0) && (MEM_rd == IDU_rs1);
-wire exu_rs2_match = IDU_valid && EXU_valid && EXU_R_Wen &&
+wire exu_rs2_match = IDU_valid && IDU_uses_rs2 && EXU_valid && EXU_R_Wen &&
                      (EXU_rd != 5'd0) && (EXU_rd == IDU_rs2);
-wire mem_rs2_match = IDU_valid && MEM_valid && MEM_R_Wen &&
+wire mem_rs2_match = IDU_valid && IDU_uses_rs2 && MEM_valid && MEM_R_Wen &&
                      (MEM_rd != 5'd0) && (MEM_rd == IDU_rs2);
 
 assign IDU_rs1_choice = exu_rs1_match ? 2'b01 :
@@ -43,5 +45,4 @@ assign IDU_rs2_choice = exu_rs2_match ? 2'b01 :
                         2'b00;
 
 endmodule                                                           //Aribter
-
 

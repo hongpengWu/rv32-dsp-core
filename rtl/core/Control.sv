@@ -23,6 +23,8 @@ module Control (
 
     input              [   4: 0]        IDU_rs1                    ,
     input              [   4: 0]        IDU_rs2                    ,
+    input                               IDU_uses_rs1               ,
+    input                               IDU_uses_rs2               ,
 
     input                               IDU_valid                  ,
     input                               EXU_valid                  ,
@@ -69,8 +71,8 @@ module Control (
     assign                              IFU_stall                   = IDU_valid && EXU_valid &&
                                                                        EXU_mem_ren &&
                                                                        (EXU_rd != 5'd0) &&
-                                                                       ((EXU_rd == IDU_rs1) ||
-                                                                        (EXU_rd == IDU_rs2));
+                                                                       ((IDU_uses_rs1 && (EXU_rd == IDU_rs1)) ||
+                                                                        (IDU_uses_rs2 && (EXU_rd == IDU_rs2)));
 
 
     assign                              icache_clr                  = exu_fence_i;
@@ -97,6 +99,8 @@ module Control (
 Data_hazard Data_hazard_inst(
     .IDU_rs1                            (IDU_rs1                   ),
     .IDU_rs2                            (IDU_rs2                   ),
+    .IDU_uses_rs1                       (IDU_uses_rs1              ),
+    .IDU_uses_rs2                       (IDU_uses_rs2              ),
 
     .EXU_rd                             (EXU_rd                    ),
     .MEM_rd                             (MEM_rd                    ),
@@ -114,5 +118,4 @@ Data_hazard Data_hazard_inst(
 );
 
 endmodule                                                           //PC_Control
-
 

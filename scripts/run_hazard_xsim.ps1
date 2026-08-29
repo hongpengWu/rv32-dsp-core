@@ -17,17 +17,33 @@ foreach ($tool in @($xvlog, $xelab, $xsim)) {
 }
 
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-$source = Join-Path $repoRoot 'rtl\core\Data_hazard.sv'
-$testbench = Join-Path $repoRoot 'sim\tb_data_hazard.sv'
+$sources = @(
+    (Join-Path $repoRoot 'rtl\core\Data_hazard.sv'),
+    (Join-Path $repoRoot 'rtl\core\Control.sv'),
+    (Join-Path $repoRoot 'sim\tb_data_hazard.sv'),
+    (Join-Path $repoRoot 'sim\tb_control_hazard.sv')
+)
 
 Push-Location $buildDir
 try {
-    & $xvlog --sv $source $testbench
+    & $xvlog --sv @sources
     if ($LASTEXITCODE -ne 0) { throw "xvlog failed with exit code $LASTEXITCODE" }
-    & $xelab tb_data_hazard -s tb_data_hazard_sim --timescale 1ns/1ps
-    if ($LASTEXITCODE -ne 0) { throw "xelab failed with exit code $LASTEXITCODE" }
-    & $xsim tb_data_hazard_sim -runall
-    if ($LASTEXITCODE -ne 0) { throw "xsim failed with exit code $LASTEXITCODE" }
+
+    $cases = @(
+        @{ Top = 'tb_data_hazard'; Snapshot = 'tb_data_hazard_sim'; Pass = 'HAZARD PASS' },
+        @{ Top = 'tb_control_hazard'; Snapshot = 'tb_control_hazard_sim'; Pass = 'CONTROL HAZARD PASS' }
+    )
+    foreach ($case in $cases) {
+        & $xelab $case.Top -s $case.Snapshot --timescale 1ns/1ps
+        if ($LASTEXITCODE -ne 0) { throw "xelab failed for $($case.Top) with exit code $LASTEXITCODE" }
+        $simOutput = & $xsim $case.Snapshot -runall 2>&1
+        $simExit = $LASTEXITCODE
+        $simOutput | Write-Host
+        if ($simExit -ne 0) { throw "xsim failed for $($case.Top) with exit code $simExit" }
+        if (($simOutput | Out-String) -notmatch [regex]::Escape($case.Pass)) {
+            throw "$($case.Top) did not report a pass result"
+        }
+    }
 }
 finally {
     Pop-Location

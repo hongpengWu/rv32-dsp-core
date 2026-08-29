@@ -26,8 +26,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "xvlog failed with exit code $LASTEXITCODE" }
     & $xelab tb_rv32i_directed -s tb_rv32i_directed_sim -debug typical --timescale 1ns/1ps
     if ($LASTEXITCODE -ne 0) { throw "xelab failed with exit code $LASTEXITCODE" }
-    & $xsim tb_rv32i_directed_sim -runall
-    if ($LASTEXITCODE -ne 0) { throw "xsim failed with exit code $LASTEXITCODE" }
+    $simOutput = & $xsim tb_rv32i_directed_sim -runall 2>&1
+    $simExit = $LASTEXITCODE
+    $simOutput | Write-Host
+    if ($simExit -ne 0) { throw "xsim failed with exit code $simExit" }
+    if (($simOutput | Out-String) -notmatch 'DIRECTED PASS:') {
+        throw 'Directed simulation did not report a pass result'
+    }
 }
 finally {
     Pop-Location

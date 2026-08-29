@@ -45,7 +45,7 @@ original project remains the reference for its old memory map and behavior.
 - Git for Windows
 - Python 3.12
 - RISC-V bare-metal GCC: not installed yet
-- GitHub CLI: not installed yet
+- GitHub CLI
 
 ## Run the baseline smoke test
 
@@ -67,6 +67,19 @@ Run the current directed RV32I arithmetic test:
 This test also uses hand-encoded instructions and checks 24 register results
 through store addresses. It is a focused regression, not a substitute for the
 official architectural tests.
+
+Run the hazard and RV32I control-flow regressions:
+
+```powershell
+.\scripts\run_hazard_xsim.ps1
+.\scripts\run_control_flow_xsim.ps1
+```
+
+These tests cover valid-gated forwarding, true and false load-use hazards, all
+six RV32I branch conditions on taken and not-taken paths, negative branch/JAL
+offsets, JAL/JALR link values, JALR bit-zero clearing, and wrong-path flushing.
+All simulation scripts require an explicit testbench pass marker because XSim
+can return process exit code zero after a SystemVerilog `$fatal`.
 
 Create a local Vivado project when GUI inspection is useful:
 

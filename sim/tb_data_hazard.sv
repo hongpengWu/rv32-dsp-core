@@ -3,6 +3,8 @@
 module tb_data_hazard;
     logic [4:0] IDU_rs1;
     logic [4:0] IDU_rs2;
+    logic       IDU_uses_rs1;
+    logic       IDU_uses_rs2;
     logic [4:0] EXU_rd;
     logic [4:0] MEM_rd;
     logic       IDU_valid;
@@ -30,6 +32,8 @@ module tb_data_hazard;
     initial begin
         IDU_rs1 = 5'd3;
         IDU_rs2 = 5'd4;
+        IDU_uses_rs1 = 1'b1;
+        IDU_uses_rs2 = 1'b1;
         EXU_rd = 5'd3;
         MEM_rd = 5'd4;
         IDU_valid = 1'b1;
@@ -49,6 +53,11 @@ module tb_data_hazard;
 
         IDU_valid = 1'b1;
         EXU_valid = 1'b1;
+        IDU_uses_rs1 = 1'b0;
+        IDU_uses_rs2 = 1'b0;
+        check(2'b00, 2'b00, "unused immediate fields do not forward");
+        IDU_uses_rs1 = 1'b1;
+        IDU_uses_rs2 = 1'b1;
         MEM_mem_ren = 1'b0;
         IDU_rs1 = 5'd0;
         IDU_rs2 = 5'd0;

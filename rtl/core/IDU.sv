@@ -39,6 +39,8 @@ module IDU(
     output                              inv_flag                   ,
     output                              branch_flag                ,
     output                              jump_flag                  ,
+    output                              uses_rs1                   ,
+    output                              uses_rs2                   ,
 
     output             [   3: 0]        alu_opcode                 ,
 
@@ -145,6 +147,21 @@ module IDU(
 
     assign                              jump_flag                   = legal_inst && (opcode == `I2_opcode || opcode == `J_opcode);
 
+    // Source-use metadata is used by the hazard unit.  Immediate fields in
+    // LUI/AUIPC/JAL and CSR-immediate instructions are not register sources.
+    assign                              uses_rs1                    = legal_inst &&
+                                                                       ((opcode == `R_opcode) ||
+                                                                        (opcode == `I0_opcode) ||
+                                                                        (opcode == `I1_opcode) ||
+                                                                        (opcode == `I2_opcode) ||
+                                                                        (opcode == `S_opcode) ||
+                                                                        (opcode == `B_opcode) ||
+                                                                        (opcode == `M_opcode && funct3[2] == 1'b0 && funct3 != 3'b000));
+    assign                              uses_rs2                    = legal_inst &&
+                                                                       ((opcode == `R_opcode) ||
+                                                                        (opcode == `S_opcode) ||
+                                                                        (opcode == `B_opcode));
+
     assign                              inv_flag                    = legal_inst && (opcode == `B_opcode && (funct3 == 3'b101 || funct3 == 3'b111 || funct3 == 3'b000 ));
     assign                              branch_flag                 = legal_inst && (opcode == `B_opcode);
  
@@ -201,8 +218,10 @@ module IDU(
     assign                              imm_U                       = {inst[31:12],12'd0};
     assign                              imm_R                       = {25'd0,inst[31:25]};
     assign                              imm_S                       = {{20{inst[31]}},inst[31:25],inst[11:7]};
-    assign                              imm_B                       = {imm_S[31:11],imm_S[0],imm_S[10:1]}<<1;
-    assign                              imm_J                       = {{11{inst[31]}},inst[31],inst[19:12],inst[20],inst[30:21]}<<1;
+    assign                              imm_B                       = {{19{inst[31]}}, inst[31], inst[7],
+                                                                       inst[30:25], inst[11:8], 1'b0};
+    assign                              imm_J                       = {{11{inst[31]}}, inst[31], inst[19:12],
+                                                                       inst[20], inst[30:21], 1'b0};
 /* verilator lint_off IMPLICIT */
 
     assign imm = (opcode == `I0_opcode || opcode == `I1_opcode || opcode == `I2_opcode || opcode == `M_opcode)? imm_I:

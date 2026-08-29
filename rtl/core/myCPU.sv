@@ -49,6 +49,8 @@ module myCPU (
   wire [ 3:0] IDU_alu_opcode;
   wire [ 4:0] IDU_rs1;
   wire [ 4:0] IDU_rs2;
+  wire        IDU_uses_rs1;
+  wire        IDU_uses_rs2;
   wire [31:0] IDU_a0_value;
   wire [31:0] IDU_mepc_out;
   wire [31:0] IDU_mtvec_out;
@@ -161,6 +163,8 @@ assign debug_wb_value = WBU_rd_value;
 
       .IDU_rs1(IDU_rs1),
       .IDU_rs2(IDU_rs2),
+      .IDU_uses_rs1(IDU_uses_rs1),
+      .IDU_uses_rs2(IDU_uses_rs2),
 
       .IDU_valid(IDU_valid),
       .EXU_valid(EXU_valid),
@@ -225,6 +229,8 @@ assign debug_wb_value = WBU_rd_value;
       .pc_out   (IDU_pc),
       .rs1      (IDU_rs1),
       .rs2      (IDU_rs2),
+      .uses_rs1 (IDU_uses_rs1),
+      .uses_rs2 (IDU_uses_rs2),
       .a0_value (IDU_a0_value),
       .mepc_out (IDU_mepc_out),
       .mtvec_out(IDU_mtvec_out),
