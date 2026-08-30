@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 // PL-only verification of the real PYNQ-Z2 Nano top.  The test exercises the
-// 125 MHz input, MMCM lock/reset sequence, the 80 MHz generated clock, a UART
+// 125 MHz input, MMCM lock/reset sequence, the 50 MHz generated clock, a UART
 // write, an LED MMIO write, and a runtime BTN0 reset/restart.  The full
 // RT-Thread image is tested separately by tb_rtthread_nano.
 module tb_pynq_z2_nano;

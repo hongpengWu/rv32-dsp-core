@@ -29,7 +29,7 @@ The standalone top is
 
 `sys_clk` is constrained to 125 MHz (8.000 ns). The top instantiates a
 7-series `MMCME2_BASE` with `CLKFBOUT_MULT_F=8.0` and
-`CLKOUT0_DIVIDE_F=12.5`, producing an 80 MHz Core/BRAM/UART clock. BTN0 is
+`CLKOUT0_DIVIDE_F=20.0`, producing a 50 MHz Core/BRAM/UART clock. BTN0 is
 asserted into the board-clock reset supervisor, which holds the MMCM in reset
 and then synchronizes reset into the generated-clock domain after lock.
 

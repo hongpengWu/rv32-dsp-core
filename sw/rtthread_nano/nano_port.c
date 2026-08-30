@@ -13,7 +13,7 @@
 #define LED_REG         (*(volatile rt_uint32_t *)(0x80200040u))
 
 #ifndef NANO_TICK_CYCLES
-#define NANO_TICK_CYCLES 80000u /* 80 MHz / 1 kHz on the real PL clock. */
+#define NANO_TICK_CYCLES 50000u /* 50 MHz / 1 kHz on the Zmmul PL image. */
 #endif
 
 static rt_uint32_t nano_next_tick;

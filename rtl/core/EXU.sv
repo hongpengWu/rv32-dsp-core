@@ -14,7 +14,7 @@ module EXU (
     input              [   2: 0]        funct3                     ,
     input              [31:0] pc ,
 
-    input              [   3: 0]        alu_opcode                 ,
+    input              [   4: 0]        alu_opcode                 ,
     input                               inv_flag                   ,
     input                               jump_flag                  ,
     input                               branch_flag                ,
@@ -61,7 +61,7 @@ module EXU (
     reg                [   2: 0]        funct3_reg                  ;
 
 
-    reg                [   3: 0]        alu_opcode_reg              ;
+    reg                [   4: 0]        alu_opcode_reg              ;
     reg                                 inv_flag_reg                ;
     reg                                 jump_flag_reg               ;
     reg                                 branch_flag_reg             ;

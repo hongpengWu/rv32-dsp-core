@@ -3,7 +3,7 @@
 // Standalone RT-Thread Nano top level for the PYNQ-Z2 PL.
 //
 // The board provides a 125 MHz PL reference clock on H16.  A real 7-series
-// MMCM derives the 80 MHz clock used by the synchronous Core, BRAMs, timer,
+// MMCM derives the 50 MHz clock used by the synchronous Core, BRAMs, timer,
 // and UART.  BTN0 is an active-high reset.  The design deliberately contains
 // no PS7, AXI, DDR, or Linux dependency.
 //
@@ -15,8 +15,8 @@ module rv32_pynq_z2_nano #(
     parameter integer DMEM_BYTES = 32768,
     parameter string IMEM_INIT_FILE = "",
     parameter string DMEM_INIT_FILE = "",
-    parameter real CORE_CLKOUT_DIVIDE_F = 12.5,
-    parameter integer UART_CLK_HZ = 80_000_000,
+    parameter real CORE_CLKOUT_DIVIDE_F = 20.0,
+    parameter integer UART_CLK_HZ = 50_000_000,
     parameter integer UART_BAUD = 115_200
 ) (
     input  logic       sys_clk,
@@ -36,8 +36,9 @@ module rv32_pynq_z2_nano #(
     wire cpu_clk;
     wire mmcm_fb;
 
-    // 125 MHz * 8 / 12.5 = 80 MHz.  The 1000 MHz VCO is legal for the
-    // XC7Z020-1CLG400C and leaves useful timing margin for this Core.
+    // 125 MHz * 8 / 20 = 50 MHz.  The 1000 MHz VCO is legal for the
+    // XC7Z020-1CLG400C and gives the combinational Zmmul path useful timing
+    // margin while retaining a simple single-cycle implementation.
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
         .CLKFBOUT_MULT_F(8.0),

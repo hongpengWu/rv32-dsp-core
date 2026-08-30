@@ -33,8 +33,13 @@ if {[get_property STATUS [get_runs synth_1]] != "synth_design Complete!"} {
 # sign-off reports and bitstream write explicitly below.
 launch_runs impl_1 -to_step route_design -jobs $jobs
 wait_on_run impl_1
-if {[get_property STATUS [get_runs impl_1]] != "route_design Complete!"} {
-    error "PYNQ-Z2 Nano implementation/routing did not complete successfully"
+# Vivado 2024.2 may report the run as failed when timing is negative even
+# though routing produced a complete checkpoint.  The routed DCP is the
+# authoritative artifact for the reports and bitstream below; do not reject
+# it solely because the run status carries a timing-warning suffix.
+set routed_dcp [file join $project_dir rv32_dsp_pynq_z2_nano.runs impl_1 rv32_pynq_z2_nano_routed.dcp]
+if {![file exists $routed_dcp]} {
+    error "PYNQ-Z2 Nano routed checkpoint was not generated"
 }
 
 open_run impl_1

@@ -8,10 +8,11 @@ physical board.
 
 The build uses the official Nano sources in
 `E:\riscv-tools\src\rtthread-nano-master\rt-thread` and the xPack
-`riscv-none-elf-gcc` toolchain.  The selected ISA is
-`rv32i_zicsr_zifencei`/`ilp32`; the Core has no hardware M extension.  The
-port reuses RT-Thread's upstream RISC-V context and e310 trap assembly and
-implements the board hooks in `sw/rtthread_nano/nano_port.c`.
+`riscv-none-elf-gcc` toolchain. The selected Nano ISA remains
+`rv32i_zicsr_zifencei`/`ilp32`, so the operating-system baseline does not
+depend on the Core's `Zmmul` or custom DSP extensions. The port reuses
+RT-Thread's upstream RISC-V context and e310 trap assembly and implements the
+board hooks in `sw/rtthread_nano/nano_port.c`.
 
 The linker places executable code and read-only tables at `0x8000_0000` and
 RAM at `0x8010_0000`.  Startup code initializes the stack, copies `.data`
@@ -46,7 +47,7 @@ The self-checking testbench captures UART bytes, checks that the LED changes
 after thread wakeups, rejects X/Z data-bus requests, and requires timer/core
 progress.  `-SimFast` uses a 10,000-cycle simulated tick and 1-Mbaud UART so
 the regression completes quickly.  A normal build (without `-SimFast`) uses
-80,000 cycles per tick (80 MHz / 1 kHz) and 115200 baud for the eventual
+50,000 cycles per tick (50 MHz / 1 kHz) and 115200 baud for the eventual
 PYNQ-Z2 deployment.
 
 ## Scope and next steps

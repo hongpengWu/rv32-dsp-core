@@ -49,7 +49,7 @@ module myCPU (
   wire        IDU_jump_flag;
   wire [31:0] IDU_add1_value;
   wire [31:0] IDU_add2_value;
-  wire [ 3:0] IDU_alu_opcode;
+  wire [ 4:0] IDU_alu_opcode;
   wire [ 4:0] IDU_rs1;
   wire [ 4:0] IDU_rs2;
   wire        IDU_uses_rs1;

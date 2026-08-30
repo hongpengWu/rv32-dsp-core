@@ -13,9 +13,10 @@ PS software application.
 - [x] Build the Nano image with
       `vivado/create_pynq_z2_nano_project.tcl` and
       `vivado/build_pynq_z2_nano_bitstream.tcl`.
-- [x] Confirm the Nano MMCM image meets timing: 125 MHz input, 80 MHz
-      generated Core/BRAM clock, post-route WNS +0.581 ns and WHS +0.131 ns,
-      with zero setup or hold failing endpoints.
+- [x] Confirm the Nano/Zmmul/custom-DSP MMCM image builds a routed checkpoint
+      and bitstream with 125 MHz input, 50 MHz generated Core/BRAM clock,
+      seven DSP48E1 blocks, post-route WNS +1.015 ns/WHS +0.155 ns, zero
+      failing endpoints, and zero DRC errors.
 - [x] Simulate the Nano top's cold start and runtime BTN0 reset, including
       MMCM unlock, CPU-domain reset, LED clear, CPU restart, and UART TX.
 - [ ] Close timing at 125 MHz for the direct-clock comparison top.  It is
@@ -54,8 +55,9 @@ PS software application.
 4. Reduce the design to a clock-counter LED test to isolate board wiring.
 5. Re-run the strict PL simulation before changing RTL.
 
-The post-route DRC has zero errors. Two `PDRC-138` LUT-packing warnings are
-tool placement advisories, and the expected PL-only `ZPS7-1` advisory can
-remain until a later milestone that intentionally adds a PS7 processing-
-system block. See [`docs/pynq-z2.md`](pynq-z2.md) for the clock/PHYRSTB risk
-and the complete standalone-top wiring notes.
+The current post-route DRC has zero errors. Its DSP input/output-pipelining
+warnings describe the deliberately single-cycle arithmetic paths, and the
+expected PL-only `ZPS7-1` advisory can remain until a later milestone that
+intentionally adds a PS7 processing-system block. See
+[`docs/pynq-z2.md`](pynq-z2.md) for the clock/PHYRSTB risk and the complete
+standalone-top wiring notes.

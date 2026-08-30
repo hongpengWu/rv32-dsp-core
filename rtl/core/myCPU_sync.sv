@@ -39,7 +39,7 @@ module myCPU_sync (
     wire        IDU_inv_flag, IDU_branch_flag, IDU_jump_flag;
     wire        IDU_uses_rs1, IDU_uses_rs2;
     wire [31:0] IDU_add1_value, IDU_add2_value, IDU_rd_value;
-    wire [3:0]  IDU_alu_opcode;
+    wire [4:0]  IDU_alu_opcode;
     wire [31:0] IDU_a0_value, IDU_mepc_out, IDU_mtvec_out;
     wire [31:0] IDU_mstatus_out, IDU_mie_out;
     wire        IDU_valid, IDU_ready;

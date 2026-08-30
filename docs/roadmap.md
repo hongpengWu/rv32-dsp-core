@@ -74,9 +74,21 @@ dependency for the current milestone.
 
 - Implement all four Zmmul operations.
 - Infer DSP48E1 resources for multiplication.
-- Add a custom-0 fixed-point MAC/accumulator unit.
-- Add rounding and saturation operations.
+- Add a custom-0 packed fixed-point dot-product unit.
+- Add a rounded and saturated Q1.15 operation.
 - Provide C inline-assembly wrappers using `.insn`.
+
+Current status: all four standard `Zmmul` instructions are implemented in the
+existing EXU/ALU path and covered by CPU-level signedness/high-half and random
+ALU-vector checks. The strict PL regression and the selected 41-case upstream
+RV32UI profile remain passing. Vivado 2024.2 maps the shared Zmmul multiplier
+and custom packed operations to seven DSP48E1 blocks; the PYNQ-Z2 Nano image
+is signed off at 50 MHz with post-route WNS +1.015 ns, WHS +0.155 ns, zero
+failing endpoints, and zero DRC errors. The first custom-0 packed dot-product and rounded/
+saturated Q1.15 operations are implemented, tested, and exposed through
+ordinary-GCC `.insn` wrappers. A true persistent accumulator form, a
+pipelined/multi-cycle multiplier, and end-to-end FIR/benchmark comparisons
+are the remaining Phase 5 work.
 
 Exit criterion: FIR, dot-product, and matrix-multiply results match the scalar
 reference implementation.

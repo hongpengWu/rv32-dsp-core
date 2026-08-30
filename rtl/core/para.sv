@@ -27,6 +27,18 @@
 `define alu_srl                   4'b1001
 `define alu_sra                   4'b1010
 `define alu_andn                  4'b1011
+// RV32M/Zmmul operations.  The ALU selector is five bits so the standard
+// multiply operations and project-specific custom-0 operations share the
+// existing single-cycle EXU path.
+`define alu_mul                   5'b01100  // low 32 bits, signed x signed
+`define alu_mulh                  5'b01101  // high 32 bits, signed x signed
+`define alu_mulhsu                5'b01110  // high 32 bits, signed x unsigned
+`define alu_mulhu                 5'b01111  // high 32 bits, unsigned x unsigned
+// custom-0 packed fixed-point DSP operations
+`define alu_dotp16                5'b10000  // two signed 16x16 lanes, summed
+`define alu_q15mul                5'b10001  // rounded/saturated signed Q1.15
+
+`define custom0_opcode            7'b0001011
 
 
 `define Performance_Count

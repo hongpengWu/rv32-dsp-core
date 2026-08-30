@@ -7,17 +7,17 @@ small, verifiable FPGA DSP processor for the PYNQ-Z2 board.
 
 - RV32I base ISA with strict instruction legality checks
 - Zicsr and basic Machine-mode traps
-- Zmmul multiplication using DSP48E1 resources
+- Zmmul multiplication, with DSP48E1 mapping evaluated separately
 - A documented custom fixed-point DSP extension
 - Five-stage in-order pipeline with explicit valid/stall/flush behavior
 - Synchronous Harvard instruction and data BRAM
 - PYNQ-Z2 PS software loading and run control
 
-The current protected milestone is smaller and deliberately achievable first:
-an RV32I + Zicsr machine running RT-Thread Nano from PL-only synchronous ROM,
-RAM, UART, and machine-timer peripherals.  DSP instructions and PS/AXI
-integration remain incremental follow-on work and are not required for the
-Nano baseline.
+The protected baseline is an RV32I + Zicsr machine running RT-Thread Nano from
+PL-only synchronous ROM, RAM, UART, and machine-timer peripherals. The Core
+now additionally implements standard `Zmmul` and two custom fixed-point DSP
+operations. PS/AXI integration remains optional and is not required by either
+the Nano baseline or the current DSP image.
 
 This is an educational FPGA soft core. It does not target Linux, an MMU,
 caches, superscalar execution, or commercial DSP compatibility.
@@ -119,6 +119,42 @@ excluded because it requires hardware-completed misaligned accesses, whereas
 this Core intentionally implements the standard load/store-misalignment traps.
 See `docs/riscv-tests.md` for the exact scope and provenance.
 
+## RV32M/Zmmul multiply extension
+
+The Core now implements the four standard `Zmmul` instructions (`MUL`,
+`MULH`, `MULHSU`, and `MULHU`) as single-cycle EXU operations. Run the focused
+signedness/high-half test with:
+
+```powershell
+.\scripts\run_mul_xsim.ps1
+```
+
+The extension is included in the complete PL strict regression. The Nano image
+continues to use `rv32i_zicsr_zifencei`; DSP benchmark programs can opt into
+`rv32im` separately. See [`docs/rv32m-multiply.md`](docs/rv32m-multiply.md)
+for encodings, implementation details, and the next custom-DSP boundary.
+
+## Custom packed fixed-point DSP extension
+
+The first project-specific `custom-0` operations are now implemented and
+tested:
+
+- `XDOTP16`: two signed 16×16 lane products accumulated into one 32-bit sum;
+- `XQ15MUL`: signed Q1.15 low-half multiply with deterministic rounding and
+  signed saturation to `[-32768, 32767]`.
+
+Run the focused CPU regression and the toolchain assembly check with:
+
+```powershell
+.\scripts\run_dsp_custom_xsim.ps1
+.\scripts\check_dsp_asm.ps1
+```
+
+The C wrappers in [`sw/dsp/dsp_intrinsics.h`](sw/dsp/dsp_intrinsics.h) use
+GNU `.insn` directives, so they build with the ordinary RV32I compiler and do
+not require a custom GCC fork. The complete design note is
+[`docs/custom-dsp.md`](docs/custom-dsp.md).
+
 ## RT-Thread Nano PL-only image
 
 RT-Thread Nano does not require Linux.  The Windows-native flow below uses the
@@ -136,8 +172,8 @@ sets `mtvec`, copies `.data`, clears `.bss`, and starts the Nano scheduler.
 `rv32_nano_soc`: RT-Thread banner, UART output, machine-timer ticks,
 `rt_thread_mdelay()` wakeups, context switching, and LED activity.  `-SimFast`
 only shortens the simulated timer interval and increases the simulated UART
-baud; the default constants are the 80 MHz / 1 kHz / 115200-baud hardware
-values.
+baud; the default constants are the 50 MHz / 1 kHz / 115200-baud hardware
+values used by the Zmmul-enabled PYNQ image.
 
 The Nano shell's map is:
 
@@ -176,9 +212,11 @@ Generated projects and simulation files go under `build/` and are not tracked.
 ## PYNQ-Z2 standalone PL images
 
 The direct-clock comparison demo uses the 125 MHz PL clock, BTN0 as reset, and
-the four user LEDs. The timing-safe board images use a real MMCM to derive an
-80 MHz Core/BRAM clock from that 125 MHz reference. The current Nano sign-off
-top is `rv32_pynq_z2_nano`; it has no PS7, AXI, DDR, or Linux dependency and
+the four user LEDs. The timing-safe RV32I comparison image uses a real MMCM to
+derive an 80 MHz Core/BRAM clock from that 125 MHz reference. The current Nano
+image, which also includes Zmmul, uses a 50 MHz MMCM output so the
+combinational multiplier has positive timing margin. The current Nano top is
+`rv32_pynq_z2_nano`; it has no PS7, AXI, DDR, or Linux dependency and
 boots the RT-Thread Nano image from generated ROM. The earlier LED-only tops
 remain available as small electrical smoke-test references. All synchronous
 paths use inferred Block RAM with explicit one-cycle request/response latency.

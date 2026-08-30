@@ -46,7 +46,7 @@ module IDU(
     output                              uses_rs1                   ,
     output                              uses_rs2                   ,
 
-    output             [   3: 0]        alu_opcode                 ,
+    output             [   4: 0]        alu_opcode                 ,
 
     output             [   4: 0]        rs1                        ,
     output             [   4: 0]        rs2                        ,
@@ -156,12 +156,21 @@ module IDU(
         case (opcode)
             `R_opcode: begin
                 case (funct3)
-                    3'b000: legal_inst = (oprand == 7'b0000000) || (oprand == 7'b0100000);
-                    3'b001, 3'b010, 3'b011, 3'b100, 3'b110, 3'b111:
+                    3'b000: legal_inst = (oprand == 7'b0000000) ||
+                                         (oprand == 7'b0100000) ||
+                                         (oprand == 7'b0000001); // ADD/SUB/MUL
+                    3'b001, 3'b010, 3'b011:
+                            legal_inst = (oprand == 7'b0000000) ||
+                                         (oprand == 7'b0000001); // SLL/S*H
+                    3'b100, 3'b110, 3'b111:
                             legal_inst = (oprand == 7'b0000000);
                     3'b101: legal_inst = (oprand == 7'b0000000) || (oprand == 7'b0100000);
                     default: legal_inst = 1'b0;
                 endcase
+            end
+            `custom0_opcode: begin
+                legal_inst = ((oprand == 7'b0000000) && (funct3 == 3'b000)) ||
+                             ((oprand == 7'b0000001) && (funct3 == 3'b001));
             end
             `I0_opcode: legal_inst = (funct3 == 3'b000) || (funct3 == 3'b001) ||
                                       (funct3 == 3'b010) || (funct3 == 3'b100) ||
@@ -217,7 +226,7 @@ module IDU(
     assign                              csr_wen_next[4]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h304);
     assign                              csr_wen_next[5]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h340);
 
-    assign                              R_wen_next                  = legal_inst && !misaligned_access && ((opcode == `R_opcode) || (opcode == `I0_opcode) ||
+    assign                              R_wen_next                  = legal_inst && !misaligned_access && ((opcode == `R_opcode) || (opcode == `custom0_opcode) || (opcode == `I0_opcode) ||
                                                                        (opcode == `I1_opcode) || (opcode == `I2_opcode) ||
                                                                        (opcode == `U0_opcode) || (opcode == `U1_opcode) ||
                                                                        (opcode == `J_opcode) ||
@@ -231,6 +240,7 @@ module IDU(
     // LUI/AUIPC/JAL and CSR-immediate instructions are not register sources.
     assign                              uses_rs1                    = legal_inst &&
                                                                        ((opcode == `R_opcode) ||
+                                                                        (opcode == `custom0_opcode) ||
                                                                         (opcode == `I0_opcode) ||
                                                                         (opcode == `I1_opcode) ||
                                                                         (opcode == `I2_opcode) ||
@@ -239,6 +249,7 @@ module IDU(
                                                                         (opcode == `M_opcode && funct3[2] == 1'b0 && funct3 != 3'b000));
     assign                              uses_rs2                    = legal_inst &&
                                                                        ((opcode == `R_opcode) ||
+                                                                        (opcode == `custom0_opcode) ||
                                                                         (opcode == `S_opcode) ||
                                                                         (opcode == `B_opcode));
 
@@ -260,7 +271,7 @@ module IDU(
 
     assign add2_value = csr_access ?
                         (((funct3 == 3'b001) || (funct3 == 3'b101)) ? 32'd0 : csr_source) :
-                        (opcode == `R_opcode || opcode == `B_opcode)?  EXU_rs2_in :
+                        (opcode == `R_opcode || opcode == `custom0_opcode || opcode == `B_opcode)?  EXU_rs2_in :
                         (opcode == `M_opcode && funct3 == 3'b010)? rd_value_next :
                         (opcode == `M_opcode && funct3 == 3'b001)? 0 : imm;
  
@@ -269,6 +280,12 @@ module IDU(
                         (((funct3 == 3'b001) || (funct3 == 3'b101)) ? `alu_add :
                          ((funct3 == 3'b010) || (funct3 == 3'b110)) ? `alu_or :
                          `alu_andn) :
+                        (opcode == `R_opcode && oprand == 7'b0000001 && funct3 == 3'b000) ? `alu_mul :
+                        (opcode == `R_opcode && oprand == 7'b0000001 && funct3 == 3'b001) ? `alu_mulh :
+                        (opcode == `R_opcode && oprand == 7'b0000001 && funct3 == 3'b010) ? `alu_mulhsu :
+                        (opcode == `R_opcode && oprand == 7'b0000001 && funct3 == 3'b011) ? `alu_mulhu :
+                        (opcode == `custom0_opcode && oprand == 7'b0000000 && funct3 == 3'b000) ? `alu_dotp16 :
+                        (opcode == `custom0_opcode && oprand == 7'b0000001 && funct3 == 3'b001) ? `alu_q15mul :
                         (opcode == `S_opcode ||  opcode == `I0_opcode
                         || opcode == `U0_opcode || opcode == `U1_opcode
                         || opcode == `J_opcode || opcode == `I2_opcode

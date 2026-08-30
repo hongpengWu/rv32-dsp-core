@@ -19,6 +19,8 @@ $tests = @(
     @{ Name = 'sync-misaligned'; Script = 'run_cpu_sync_misaligned_xsim.ps1'; Pass = 'SYNC MISALIGNED PASS:' },
     @{ Name = 'machine-timer'; Script = 'run_machine_timer_xsim.ps1'; Pass = 'TIMER PASS:' },
     @{ Name = 'sync-irq'; Script = 'run_cpu_sync_irq_xsim.ps1'; Pass = 'IRQ PASS:' },
+    @{ Name = 'rv32m-multiply'; Script = 'run_mul_xsim.ps1'; Pass = 'MUL PASS:' },
+    @{ Name = 'custom-dsp'; Script = 'run_dsp_custom_xsim.ps1'; Pass = 'DSP CUSTOM PASS:' },
     @{ Name = 'nano-soc'; Script = 'run_nano_soc_xsim.ps1'; Pass = 'NANO SOC XSIM PASS' },
     @{ Name = 'pynq-pl-demo'; Script = 'run_pynq_demo_xsim.ps1'; Pass = 'PYNQ DEMO PASS:' },
     @{ Name = 'pynq-sync-demo'; Script = 'run_pynq_sync_demo_xsim.ps1'; Pass = 'SYNC PYNQ PASS:' },
