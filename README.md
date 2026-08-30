@@ -173,14 +173,15 @@ Create a local Vivado project when GUI inspection is useful:
 
 Generated projects and simulation files go under `build/` and are not tracked.
 
-## PYNQ-Z2 standalone demo
+## PYNQ-Z2 standalone PL images
 
 The direct-clock comparison demo uses the 125 MHz PL clock, BTN0 as reset, and
-the four user LEDs.  The timing-safe board image uses a real MMCM to derive an
-80 MHz Core/BRAM clock from that 125 MHz reference; this is the recommended
-image for hardware deployment.  Both built-in programs write `0x5` to the LED
-MMIO register at `0x80200040`.  The synchronous path uses inferred Block RAM
-with explicit one-cycle request/response latency.
+the four user LEDs. The timing-safe board images use a real MMCM to derive an
+80 MHz Core/BRAM clock from that 125 MHz reference. The current Nano sign-off
+top is `rv32_pynq_z2_nano`; it has no PS7, AXI, DDR, or Linux dependency and
+boots the RT-Thread Nano image from generated ROM. The earlier LED-only tops
+remain available as small electrical smoke-test references. All synchronous
+paths use inferred Block RAM with explicit one-cycle request/response latency.
 
 Run the self-checking integration simulation:
 
@@ -197,7 +198,7 @@ Create the Vivado project and generate a bitstream:
   -source .\vivado\build_pynq_z2_bitstream.tcl
 ```
 
-For the timing-safe synchronous board image:
+For the timing-safe synchronous LED-only comparison image:
 
 ```powershell
 & 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
@@ -206,14 +207,27 @@ For the timing-safe synchronous board image:
   -source .\vivado\build_pynq_z2_sync_mmcm_bitstream.tcl
 ```
 
-The timing evidence for the two clocking choices is recorded in
+For the standalone RT-Thread Nano board image:
+
+```powershell
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\create_pynq_z2_nano_project.tcl
+& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
+  -source .\vivado\build_pynq_z2_nano_bitstream.tcl
+```
+
+The timing evidence for the clocking choices is recorded in
 [`docs/timing-baseline.md`](docs/timing-baseline.md).  The direct 125 MHz
 variant is retained for comparison; use the MMCM bitstream for board
 sign-off.
 
-The timing-safe bitstream and post-route reports are written under
-`build/bitstream_pynq_z2_sync_mmcm/`. After programming the board, LED0 and
-LED2 should turn on (`0101`); BTN0 restarts the Core.
+The Nano bitstream and post-route reports are written under
+`build/bitstream_pynq_z2_nano/`. The LED-only MMCM bitstream and reports are
+written under `build/bitstream_pynq_z2_sync_mmcm/`. The Nano top exports UART
+TX on Raspberry-Pi header pin 37 (W9), because the on-board FT2232 bridge is
+connected to PS MIO14/15. Use a 3.3 V USB-TTL adapter for serial output. See
+[`docs/pynq-z2.md`](docs/pynq-z2.md) for the verified pin map and the
+PHYRSTB/125 MHz clock caveat.
 
 This first milestone is intentionally PL-only, so Vivado reports the expected
 `ZPS7-1` advisory that no PS7 processing-system block is present. It does not
@@ -228,5 +242,5 @@ arrives.
 The optional `rv32_pl_controlled` shell reserves start, reset, done, cycle, and
 retirement-counter signals for a future PS7/AXI-Lite adapter. It is verified as
 a standalone PL module today; the recommended board top is
-`rv32_pynq_z2_sync_mmcm_demo` (with `rv32_pynq_z2_demo` retained for direct-
-clock comparison), so no PS, Linux, or board is required for the regression.
+`rv32_pynq_z2_nano` (with the LED-only tops retained for diagnostics), so no
+PS, Linux, or board is required for the regression.

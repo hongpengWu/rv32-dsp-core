@@ -23,6 +23,7 @@ $tests = @(
     @{ Name = 'pynq-pl-demo'; Script = 'run_pynq_demo_xsim.ps1'; Pass = 'PYNQ DEMO PASS:' },
     @{ Name = 'pynq-sync-demo'; Script = 'run_pynq_sync_demo_xsim.ps1'; Pass = 'SYNC PYNQ PASS:' },
     @{ Name = 'pynq-sync-mmcm-demo'; Script = 'run_pynq_sync_mmcm_demo_xsim.ps1'; Pass = 'MMCM PYNQ PASS:' },
+    @{ Name = 'pynq-z2-nano-top'; Script = 'run_pynq_z2_nano_xsim.ps1'; Pass = 'PYNQ NANO PASS:' },
     @{ Name = 'controlled-pl-shell'; Script = 'run_pl_controlled_xsim.ps1'; Pass = 'CONTROLLED PL PASS:' }
 )
 
