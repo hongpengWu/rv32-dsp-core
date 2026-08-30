@@ -25,7 +25,9 @@ module tb_sync_mem;
         .req_valid (rom_req_valid),
         .req_addr  (rom_req_addr),
         .rsp_valid (rom_rsp_valid),
-        .rsp_data  (rom_rsp_data)
+        .rsp_data  (rom_rsp_data),
+        .data_req_valid(1'b0), .data_req_addr(32'd0),
+        .data_rsp_valid(), .data_rsp_data()
     );
 
     rv32_sync_byte_ram #(.DEPTH_BYTES(16), .BASE_ADDR(RAM_BASE)) ram (

@@ -13,6 +13,12 @@ small, verifiable FPGA DSP processor for the PYNQ-Z2 board.
 - Synchronous Harvard instruction and data BRAM
 - PYNQ-Z2 PS software loading and run control
 
+The current protected milestone is smaller and deliberately achievable first:
+an RV32I + Zicsr machine running RT-Thread Nano from PL-only synchronous ROM,
+RAM, UART, and machine-timer peripherals.  DSP instructions and PS/AXI
+integration remain incremental follow-on work and are not required for the
+Nano baseline.
+
 This is an educational FPGA soft core. It does not target Linux, an MMU,
 caches, superscalar execution, or commercial DSP compatibility.
 
@@ -112,6 +118,40 @@ The selected profile contains 41 passing RV32UI cases.  Upstream `ma_data` is
 excluded because it requires hardware-completed misaligned accesses, whereas
 this Core intentionally implements the standard load/store-misalignment traps.
 See `docs/riscv-tests.md` for the exact scope and provenance.
+
+## RT-Thread Nano PL-only image
+
+RT-Thread Nano does not require Linux.  The Windows-native flow below uses the
+xPack bare-metal GCC toolchain, the official Nano kernel sources, and XSim:
+
+```powershell
+.\scripts\build_rtthread_nano.ps1 -SimFast
+.\scripts\run_rtthread_nano_xsim.ps1
+```
+
+`build_rtthread_nano.ps1` emits `build/rtthread_nano/program.mem` from an
+RV32I ELF.  The image links code at `0x8000_0000` and RAM at `0x8010_0000`,
+sets `mtvec`, copies `.data`, clears `.bss`, and starts the Nano scheduler.
+`run_rtthread_nano_xsim.ps1` then verifies the same image on
+`rv32_nano_soc`: RT-Thread banner, UART output, machine-timer ticks,
+`rt_thread_mdelay()` wakeups, context switching, and LED activity.  `-SimFast`
+only shortens the simulated timer interval and increases the simulated UART
+baud; the default constants are the 80 MHz / 1 kHz / 115200-baud hardware
+values.
+
+The Nano shell's map is:
+
+```text
+0x8000_0000  instruction ROM (also readable through the data port for .rodata)
+0x8010_0000  byte-write data RAM (32 KiB default)
+0x0200_0000  mtime, 0x0200_4000 mtimecmp
+0x1000_0000  polling UART TXDATA/STATUS
+0x8020_0040  LED register
+```
+
+The first Nano application is intentionally static (main thread plus one
+worker).  Heap, device framework, filesystems, networking, and PS7 are left
+off until the core/ABI baseline is stable.
 
 The synchronous-memory migration is exercised separately with:
 

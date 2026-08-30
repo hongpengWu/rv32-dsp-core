@@ -6,7 +6,7 @@ module EXU (
     input                               reset                      ,
 
     input                               EXU_inst_clr               ,
-    input              [   3: 0]        csr_wen                    ,
+    input              [   5: 0]        csr_wen                    ,
     input                               R_wen                      ,
     input                               mem_wen                    ,
     input                               mem_ren                    ,
@@ -34,7 +34,7 @@ module EXU (
     output             [   2: 0]        funct3_next                ,
     output             [  31: 0]        rs2_value_next             ,
     output             [   4: 0]        rd_next                    ,
-    output             [   3: 0]        csr_wen_next               ,
+    output             [   5: 0]        csr_wen_next               ,
     output                              R_wen_next                 ,
     output                              mem_wen_next               ,
     output                              mem_ren_next               ,
@@ -53,7 +53,7 @@ module EXU (
 
 
     reg                [  31: 0]        branch_pc_reg               ;
-    reg                [   3: 0]        csr_wen_reg                 ;
+    reg                [   5: 0]        csr_wen_reg                 ;
     reg                                 R_wen_reg                   ;
     reg                                 mem_wen_reg                 ;
     reg                                 mem_ren_reg                 ;
@@ -152,7 +152,7 @@ end
     assign                              funct3_next                 = funct3_reg;
     assign                              rd_next                     = rd_reg;
     assign                              rd_value_next               = rd_value_reg;
-    assign                              csr_wen_next                = valid_next ? csr_wen_reg : 4'b0;
+    assign                              csr_wen_next                = valid_next ? csr_wen_reg : 6'b0;
     assign                              R_wen_next                  = valid_next && R_wen_reg;
     assign                              mem_wen_next                = valid_next && mem_wen_reg;
     assign                              mem_ren_next                = valid_next && mem_ren_reg;

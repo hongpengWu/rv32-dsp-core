@@ -38,7 +38,7 @@ module myCPU (
   wire [31:0] IDU_trap_tval;
   wire [31:0] IDU_rs2_value;
   wire [31:0] IDU_rs1_value;
-  wire [ 3:0] IDU_csr_wen;
+  wire [ 5:0] IDU_csr_wen;
   wire        IDU_R_wen;
   wire [31:0] IDU_rd_value;
   wire        IDU_mem_wen;
@@ -57,6 +57,8 @@ module myCPU (
   wire [31:0] IDU_a0_value;
   wire [31:0] IDU_mepc_out;
   wire [31:0] IDU_mtvec_out;
+  wire [31:0] IDU_mstatus_out;
+  wire [31:0] IDU_mie_out;
 
   wire [31:0] IDU_branch_pc;
   wire        IDU_valid;
@@ -70,7 +72,7 @@ module myCPU (
   wire [31:0] EXU_rs2_value;
   wire [ 4:0] EXU_rd;
   wire [31:0] EXU_rd_value;
-  wire [ 3:0] EXU_csr_wen;
+  wire [ 5:0] EXU_csr_wen;
   wire        EXU_R_wen;
   wire        EXU_mem_wen;
   wire        EXU_mem_ren;
@@ -87,7 +89,7 @@ module myCPU (
   wire        LSU_jump_flag;
   wire        LSU_R_wen;
   wire [31:0] LSU_Rdata;
-  wire [ 3:0] LSU_csr_wen;
+  wire [ 5:0] LSU_csr_wen;
   wire [31:0] LSU_Ex_result;
   wire [31:0] LSU_rd_value;
   wire [31:0] LSU_pc;
@@ -104,7 +106,7 @@ module myCPU (
   wire [31:0] WBU_csrd;
   wire [ 4:0] WBU_rd;
   wire        WBU_R_wen;
-  wire [ 3:0] WBU_csr_wen;
+  wire [ 5:0] WBU_csr_wen;
   wire        WBU_ready;
   wire        WBU_valid;
   wire        LSU_valid;
@@ -150,6 +152,10 @@ assign debug_wb_value = WBU_rd_value;
       .reset    (cpu_rst),
       .mtvec_out(IDU_mtvec_out),
       .mepc_out (IDU_mepc_out),
+      .IDU_pc(IDU_pc),
+      .mstatus_out(IDU_mstatus_out),
+      .mie_out(IDU_mie_out),
+      .timer_irq(1'b0),
 
       .branch_pc    (EXU_branch_pc),
       .Ex_result    (EXU_Ex_result),
@@ -191,6 +197,7 @@ assign debug_wb_value = WBU_rd_value;
       .EXU_inst_clear(EXU_inst_clear),
       .dnpc_flag     (dnpc_flag),
       .trap_fire     (trap_fire),
+      .irq_fire      (),
       .mret_fire     (mret_fire)
   );
 
@@ -209,6 +216,7 @@ assign debug_wb_value = WBU_rd_value;
       .rd      (WBU_rd),
       .R_wen   (WBU_R_wen),
       .csr_wen (WBU_csr_wen),
+      .timer_irq(1'b0),
 
       .EXU_rs1_in  (EXU_rs1_in),
       .EXU_rs2_in  (EXU_rs2_in),
@@ -246,8 +254,11 @@ assign debug_wb_value = WBU_rd_value;
       .a0_value (IDU_a0_value),
       .mepc_out (IDU_mepc_out),
       .mtvec_out(IDU_mtvec_out),
+      .mstatus_out(IDU_mstatus_out),
+      .mie_out(IDU_mie_out),
       .trap_fire (trap_fire),
       .mret_fire (mret_fire),
+      .irq_fire  (1'b0),
 
 
       .valid_last(IFU_valid),

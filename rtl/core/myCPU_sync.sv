@@ -8,6 +8,7 @@
 module myCPU_sync (
     input  logic        cpu_clk,
     input  logic        cpu_rst,
+    input  logic        timer_irq,
     output logic        imem_req_valid,
     output logic [31:0] imem_req_addr,
     input  logic        imem_rsp_valid,
@@ -33,34 +34,35 @@ module myCPU_sync (
     wire        IDU_mret_flag, IDU_ecall_flag, IDU_ebreak_flag;
     wire        IDU_fence_i_flag, IDU_illegal_inst;
     wire [31:0] IDU_trap_cause, IDU_trap_tval, IDU_rs1_value, IDU_rs2_value;
-    wire [3:0]  IDU_csr_wen;
+    wire [5:0]  IDU_csr_wen;
     wire        IDU_R_wen, IDU_mem_wen, IDU_mem_ren;
     wire        IDU_inv_flag, IDU_branch_flag, IDU_jump_flag;
     wire        IDU_uses_rs1, IDU_uses_rs2;
     wire [31:0] IDU_add1_value, IDU_add2_value, IDU_rd_value;
     wire [3:0]  IDU_alu_opcode;
     wire [31:0] IDU_a0_value, IDU_mepc_out, IDU_mtvec_out;
+    wire [31:0] IDU_mstatus_out, IDU_mie_out;
     wire        IDU_valid, IDU_ready;
 
     wire [31:0] EXU_branch_pc, EXU_rs2_value, EXU_rd_value, EXU_Ex_result, EXU_pc;
     wire [4:0]  EXU_rd;
     wire [2:0]  EXU_funct3;
-    wire [3:0]  EXU_csr_wen;
+    wire [5:0]  EXU_csr_wen;
     wire        EXU_jump_flag, EXU_R_wen, EXU_mem_wen, EXU_mem_ren;
     wire        EXU_branch_flag, EXU_fence_i_flag, EXU_valid, EXU_ready;
     wire [31:0] EXU_rs1_in, EXU_rs2_in;
 
     wire [31:0] LSU_Rdata, LSU_Ex_result, LSU_rd_value, LSU_pc;
     wire [4:0]  LSU_rd;
-    wire [3:0]  LSU_csr_wen;
+    wire [5:0]  LSU_csr_wen;
     wire        LSU_jump_flag, LSU_R_wen, LSU_mem_ren, LSU_valid, LSU_ready;
 
     wire [31:0] WBU_pc, WBU_rd_value, WBU_csrd;
     wire [4:0]  WBU_rd;
-    wire [3:0]  WBU_csr_wen;
+    wire [5:0]  WBU_csr_wen;
     wire        WBU_R_wen, WBU_ready, WBU_valid;
 
-    wire        dnpc_flag, EXU_inst_clear, trap_fire, mret_fire;
+    wire        dnpc_flag, EXU_inst_clear, trap_fire, mret_fire, irq_fire;
     wire [31:0] dnpc;
     wire        IFU_stall, icache_clr;
 
@@ -80,7 +82,9 @@ module myCPU_sync (
 
     Control Control_inst0 (
         .clock(cpu_clk), .reset(cpu_rst), .mtvec_out(IDU_mtvec_out),
-        .mepc_out(IDU_mepc_out), .branch_pc(EXU_branch_pc),
+        .mepc_out(IDU_mepc_out), .IDU_pc(IDU_pc),
+        .mstatus_out(IDU_mstatus_out), .mie_out(IDU_mie_out),
+        .timer_irq(timer_irq), .branch_pc(EXU_branch_pc),
         .Ex_result(EXU_Ex_result), .MEM_Ex_result(LSU_Ex_result),
         .IDU_rs1_value(IDU_rs1_value), .IDU_rs2_value(IDU_rs2_value),
         .MEM_Rdata(LSU_Rdata), .branch_flag(EXU_branch_flag),
@@ -95,13 +99,13 @@ module myCPU_sync (
         .IFU_stall(IFU_stall), .EXU_rs1_in(EXU_rs1_in),
         .EXU_rs2_in(EXU_rs2_in), .dnpc(dnpc), .icache_clr(icache_clr),
         .EXU_inst_clear(EXU_inst_clear), .dnpc_flag(dnpc_flag),
-        .trap_fire(trap_fire), .mret_fire(mret_fire)
+        .trap_fire(trap_fire), .mret_fire(mret_fire), .irq_fire(irq_fire)
     );
 
     IDU IDU_Inst0 (
         .clock(cpu_clk), .reset(cpu_rst), .snpc(IFU_snpc), .inst(IFU_inst),
         .pc(IFU_pc), .rd_value(WBU_rd_value), .csrd(WBU_csrd), .rd(WBU_rd),
-        .R_wen(WBU_R_wen), .csr_wen(WBU_csr_wen), .EXU_rs1_in(EXU_rs1_in),
+        .R_wen(WBU_R_wen), .csr_wen(WBU_csr_wen), .timer_irq(timer_irq), .EXU_rs1_in(EXU_rs1_in),
         .EXU_rs2_in(EXU_rs2_in), .branch_pc(IDU_branch_pc), .rd_next(IDU_rd),
         .funct3(IDU_funct3), .mret_flag(IDU_mret_flag),
         .ecall_flag(IDU_ecall_flag), .ebreak_flag(IDU_ebreak_flag),
@@ -116,7 +120,8 @@ module myCPU_sync (
         .alu_opcode(IDU_alu_opcode), .pc_out(IDU_pc), .rs1(IDU_rs1),
         .rs2(IDU_rs2), .uses_rs1(IDU_uses_rs1), .uses_rs2(IDU_uses_rs2),
         .a0_value(IDU_a0_value), .mepc_out(IDU_mepc_out),
-        .mtvec_out(IDU_mtvec_out), .trap_fire(trap_fire), .mret_fire(mret_fire),
+        .mtvec_out(IDU_mtvec_out), .mstatus_out(IDU_mstatus_out), .mie_out(IDU_mie_out),
+        .trap_fire(trap_fire), .mret_fire(mret_fire), .irq_fire(irq_fire),
         .valid_last(IFU_valid), .ready_last(IDU_ready),
         .ready_next(EXU_ready), .valid_next(IDU_valid)
     );

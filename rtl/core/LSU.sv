@@ -9,7 +9,7 @@ module LSU (
     input        mem_ren,
     input        mem_wen,
     input        R_wen,
-    input [ 3:0] csr_wen,
+    input [ 5:0] csr_wen,
     input [31:0] Ex_result,
     input [ 4:0] rd,
     input [ 2:0] funct3,
@@ -22,7 +22,7 @@ module LSU (
     output     [31:0] rd_value_next,
     output            R_wen_next,
     output reg [31:0] LSU_Rdata,
-    output     [ 3:0] csr_wen_next,
+    output     [ 5:0] csr_wen_next,
     output     [31:0] Ex_result_next,
     output     [ 4:0] rd_next,
     output            mem_ren_next,
@@ -55,7 +55,7 @@ module LSU (
   reg         mem_ren_reg;
   reg         mem_wen_reg;
   reg         R_wen_reg;
-  reg  [ 3:0] csr_wen_reg;
+  reg  [ 5:0] csr_wen_reg;
   reg  [31:0] Ex_result_reg;
   reg  [31:0] rd_value_reg;
   reg  [ 4:0] rd_reg;
@@ -127,7 +127,7 @@ module LSU (
 
   assign R_wen_next     = valid_next && R_wen_reg;
   assign jump_flag_next = valid_next && jump_flag_reg;
-  assign csr_wen_next   = valid_next ? csr_wen_reg : 4'b0;
+  assign csr_wen_next   = valid_next ? csr_wen_reg : 6'b0;
 
 
 

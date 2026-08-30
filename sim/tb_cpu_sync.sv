@@ -27,6 +27,7 @@ module tb_cpu_sync;
     always #5 clk = ~clk;
 
     myCPU_sync dut (
+        .timer_irq(1'b0),
         .cpu_clk(clk), .cpu_rst(reset),
         .imem_req_valid(imem_req_valid), .imem_req_addr(imem_req_addr),
         .imem_rsp_valid(imem_rsp_valid), .imem_rsp_data(imem_rsp_data),
@@ -40,7 +41,9 @@ module tb_cpu_sync;
 
     rv32_sync_rom #(.DEPTH_WORDS(64), .BASE_ADDR(RESET_PC)) imem (
         .clk(clk), .req_valid(imem_req_valid), .req_addr(imem_req_addr),
-        .rsp_valid(imem_rsp_valid), .rsp_data(imem_rsp_data)
+        .rsp_valid(imem_rsp_valid), .rsp_data(imem_rsp_data),
+        .data_req_valid(1'b0), .data_req_addr(32'd0),
+        .data_rsp_valid(), .data_rsp_data()
     );
 
     rv32_sync_byte_ram #(.DEPTH_BYTES(64), .BASE_ADDR(DATA_BASE)) dmem (

@@ -15,7 +15,15 @@ module rv32_sync_rom #(
     input  logic        req_valid,
     input  logic [31:0] req_addr,
     output logic        rsp_valid,
-    output logic [31:0] rsp_data
+    output logic [31:0] rsp_data,
+    // Optional second read port for Harvard systems that execute from ROM
+    // but still need to read .rodata/.data initializers over the data bus.
+    // Existing single-port instantiations may leave these ports unconnected;
+    // the strict 1'b1 check below keeps that case inactive.
+    input  logic        data_req_valid,
+    input  logic [31:0] data_req_addr,
+    output logic        data_rsp_valid,
+    output logic [31:0] data_rsp_data
 );
     localparam logic [31:0] NOP = 32'h0000_0013;
     localparam logic [31:0] LAST_ADDR = BASE_ADDR + DEPTH_WORDS * 4;
@@ -44,5 +52,17 @@ module rv32_sync_rom #(
             rsp_data <= mem[(req_addr - BASE_ADDR) >> 2];
         else
             rsp_data <= NOP;
+
+        data_rsp_valid <= (data_req_valid === 1'b1) &&
+                          (data_req_addr >= BASE_ADDR) &&
+                          (data_req_addr < LAST_ADDR) &&
+                          (data_req_addr[1:0] == 2'b00);
+        if ((data_req_valid === 1'b1) &&
+            (data_req_addr >= BASE_ADDR) &&
+            (data_req_addr < LAST_ADDR) &&
+            (data_req_addr[1:0] == 2'b00))
+            data_rsp_data <= mem[(data_req_addr - BASE_ADDR) >> 2];
+        else
+            data_rsp_data <= NOP;
     end
 endmodule

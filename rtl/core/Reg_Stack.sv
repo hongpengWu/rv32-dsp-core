@@ -7,6 +7,7 @@ module Reg_Stack(
     input              [  31: 0]           trap_cause                 ,
     input              [  31: 0]           trap_tval                  ,
     input                                  mret_fire                  ,
+    input                                  timer_irq                  ,
 
     input              [   4: 0]           rs1                        ,
     input              [   4: 0]           rs2                        ,
@@ -16,7 +17,7 @@ module Reg_Stack(
 
     input              [  31: 0]           csr_addr                   ,
     input                                  R_wen                      ,
-    input              [   3: 0]           csr_wen                    ,
+    input              [   5: 0]           csr_wen                    ,
     input              [  31: 0]           csrd                       ,
 
     output             [  31: 0]           rs1_value                  ,
@@ -25,15 +26,18 @@ module Reg_Stack(
     output             [  31: 0]           csrs                       ,
     output             [  31: 0]           mepc_out                   ,
     output             [  31: 0]           mtvec_out                  ,
-    output             [  31: 0]           mtval_out
+    output             [  31: 0]           mtval_out                  ,
+    output             [  31: 0]           mstatus_out                ,
+    output             [  31: 0]           mie_out                    ,
+    output             [  31: 0]           mscratch_out
 );
 
     wire               [  31: 0]        wdata                       ;
 
     wire               [  31: 0]        mcause_out                  ;
-    wire               [  31: 0]        mstatus_out                 ;
     wire               [  31: 0]        mvendorid_out               ;
     wire               [  31: 0]        marchid_out                 ;
+    wire               [  31: 0]        mip_out                     ;
 
 
     assign                              wdata                       = rd_value;
@@ -41,8 +45,11 @@ module Reg_Stack(
     assign                       csrs                      = (csr_addr == 32'h341)? mepc_out        :
                                                              (csr_addr == 32'h342)? mcause_out      :
                                                              (csr_addr == 32'h300)? mstatus_out     :
+                                                             (csr_addr == 32'h304)? mie_out         :
                                                              (csr_addr == 32'h305)? mtvec_out       :
                                                              (csr_addr == 32'h343)? mtval_out       :
+                                                             (csr_addr == 32'h344)? mip_out         :
+                                                             (csr_addr == 32'h340)? mscratch_out    :
                                                              (csr_addr == 32'hf11)?mvendorid_out    :
                                                              (csr_addr == 32'hf12)?marchid_out      :
                                                              (csr_addr == 32'hf14)?32'd0             :
@@ -61,6 +68,7 @@ CSR #(32,0) CSR_inst(
     .trap_cause                         (trap_cause                ),
     .trap_tval                          (trap_tval                 ),
     .mret_fire                          (mret_fire                 ),
+    .timer_irq                          (timer_irq                 ),
     
     .mvendorid_out                      (mvendorid_out             ),
     .marchid_out                        (marchid_out               ),
@@ -68,7 +76,10 @@ CSR #(32,0) CSR_inst(
     .mcause_out                         (mcause_out                ),
     .mtval_out                          (mtval_out                  ),
     .mstatus_out                        (mstatus_out               ),
-    .mtvec_out                          (mtvec_out                 ) 
+    .mtvec_out                          (mtvec_out                 ),
+    .mie_out                            (mie_out                   ),
+    .mip_out                            (mip_out                   ),
+    .mscratch_out                       (mscratch_out              )
 
 
 );

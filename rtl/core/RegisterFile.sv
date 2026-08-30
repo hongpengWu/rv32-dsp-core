@@ -14,8 +14,14 @@ module RegisterFile #(ADDR_WIDTH = 32, DATA_WIDTH = 5) (
 
 );
     reg                [DATA_WIDTH-1: 0]rf        [2**ADDR_WIDTH-1:0]  ;
+    integer i;
   always @(posedge clock) begin
-    if (wen && (waddr != 0)) rf[waddr] <= wdata;
+    if (reset) begin
+      for (i = 0; i < 2**ADDR_WIDTH; i = i + 1)
+        rf[i] <= {DATA_WIDTH{1'b0}};
+    end else if (wen && (waddr != 0)) begin
+      rf[waddr] <= wdata;
+    end
   end
 
 

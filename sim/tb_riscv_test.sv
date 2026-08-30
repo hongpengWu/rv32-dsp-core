@@ -41,6 +41,7 @@ module tb_riscv_test #(
     always #5 clk = ~clk;
 
     myCPU_sync dut (
+        .timer_irq(1'b0),
         .cpu_clk(clk), .cpu_rst(reset),
         .imem_req_valid(imem_req_valid), .imem_req_addr(imem_req_addr),
         .imem_rsp_valid(imem_rsp_valid), .imem_rsp_data(imem_rsp_data),

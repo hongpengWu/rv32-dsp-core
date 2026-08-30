@@ -5,6 +5,10 @@ module Control (
 
     input              [  31: 0]        mtvec_out                  ,
     input              [  31: 0]        mepc_out                   ,
+    input              [  31: 0]        IDU_pc                     ,
+    input              [  31: 0]        mstatus_out                ,
+    input              [  31: 0]        mie_out                    ,
+    input                               timer_irq                  ,
 
     input              [  31: 0]        branch_pc                  ,
     input              [  31: 0]        Ex_result                  ,
@@ -49,7 +53,8 @@ module Control (
     output             [  31: 0]        dnpc                       ,
     output                              dnpc_flag                  ,
     output                              trap_fire                  ,
-    output                              mret_fire
+    output                              mret_fire                  ,
+    output                              irq_fire
 );
 
 
@@ -68,20 +73,26 @@ module Control (
     wire idu_trap         = idu_ecall || idu_ebreak || illegal_inst;
     wire trap_event       = !older_redirect && idu_trap;
     wire mret_event       = !older_redirect && idu_mret;
+    wire irq_event        = !older_redirect && !idu_trap && !idu_mret &&
+                            IDU_valid && timer_irq &&
+                            mstatus_out[3] && mie_out[7];
 
-    assign trap_fire      = trap_event;
+    assign trap_fire      = trap_event || irq_event;
     assign mret_fire      = mret_event;
+    assign irq_fire       = irq_event;
 
     assign                              dnpc_flag                   = exu_branch_taken ||
                                                                        exu_jump ||
                                                                        mret_event ||
-                                                                       trap_event;
+                                                                       trap_event ||
+                                                                       irq_event;
     assign                              EXU_inst_clear              = exu_branch_taken ||
                                                                        exu_jump ||
                                                                        exu_fence_i ||
                                                                        IFU_stall ||
                                                                        trap_event ||
-                                                                       mret_event;
+                                                                       mret_event ||
+                                                                       irq_event;
     assign                              IFU_stall                   = IDU_valid && EXU_valid &&
                                                                        EXU_mem_ren &&
                                                                        (EXU_rd != 5'd0) &&
@@ -95,7 +106,7 @@ module Control (
     assign                              dnpc                        = exu_jump ? Ex_result :
                                                                        exu_branch_taken ? branch_pc :
                                                                        mret_event ? mepc_out :
-                                                                       trap_event ? mtvec_out : 32'b0;
+                                                                       (trap_event || irq_event) ? mtvec_out : 32'b0;
 
 
 

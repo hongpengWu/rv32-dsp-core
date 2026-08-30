@@ -12,7 +12,8 @@ module IDU(
     input              [  31: 0]        csrd                       ,
     input              [   4: 0]        rd                         ,
     input                               R_wen                      ,
-    input              [   3: 0]        csr_wen                    ,
+    input              [   5: 0]        csr_wen                    ,
+    input                               timer_irq                  ,
 
     input              [  31: 0]        EXU_rs1_in                 ,
     input              [  31: 0]        EXU_rs2_in                 ,
@@ -33,7 +34,7 @@ module IDU(
     
     output             [  31: 0]        add1_value                 ,
     output             [  31: 0]        add2_value                 ,
-    output             [   3: 0]        csr_wen_next               ,
+    output             [   5: 0]        csr_wen_next               ,
     output                              R_wen_next                 ,
     output             [  31: 0]        rd_value_next              ,
 
@@ -56,13 +57,16 @@ module IDU(
 
     input                               trap_fire                  ,
     input                               mret_fire                  ,
+    input                               irq_fire                   ,
 
 
     input                               valid_last                 ,
     output                              ready_last                 ,
 
     input                               ready_next                 ,
-    output                              valid_next                  
+    output                              valid_next                  ,
+    output             [  31: 0]        mstatus_out                 ,
+    output             [  31: 0]        mie_out
 );
 
 
@@ -77,6 +81,7 @@ module IDU(
     wire               [  31: 0]        imm_B                       ;
     wire               [  31: 0]        imm_J                       ;
     wire               [  31: 0]        csrs                        ;
+    wire               [  31: 0]        mscratch_csr_out             ;
     wire               [  31: 0]        imm                         ;
     wire               [  11: 0]        csr_addr12                  ;
     wire                               csr_addr_supported            ;
@@ -93,6 +98,11 @@ module IDU(
     // Keep the decoded instruction visible for one cycle so Control can take
     // a precise trap.  EXU_inst_clear (driven by illegal_inst below) removes a
     // misaligned access before it can become a live LSU transaction.
+    // Keep valid_next independent of irq_fire.  irq_fire is derived from
+    // IDU_valid in Control, so gating valid_next with irq_fire would create
+    // a combinational feedback loop (IDU_valid -> irq_fire -> valid_next).
+    // Control's EXU_inst_clear synchronously flushes the instruction when
+    // an interrupt is taken.
     assign                              valid_next                  = valid_last && legal_inst;
 
 
@@ -111,20 +121,25 @@ module IDU(
 
     assign                              csr_addr12                  = inst[31:20];
     assign                              csr_addr_supported           = (csr_addr12 == 12'h300) ||
+                                                                       (csr_addr12 == 12'h304) ||
                                                                        (csr_addr12 == 12'h305) ||
+                                                                       (csr_addr12 == 12'h344) ||
                                                                        (csr_addr12 == 12'h341) ||
                                                                        (csr_addr12 == 12'h342) ||
                                                                        (csr_addr12 == 12'h343) ||
                                                                        (csr_addr12 == 12'hf11) ||
                                                                        (csr_addr12 == 12'hf12) ||
-                                                                       (csr_addr12 == 12'hf14);
+                                                                       (csr_addr12 == 12'hf14) ||
+                                                                       (csr_addr12 == 12'h340);
     assign                              csr_access                   = (opcode == `M_opcode) &&
                                                                        (funct3 != 3'b000) &&
                                                                        csr_addr_supported;
     assign                              csr_writeable                = (csr_addr12 == 12'h300) ||
+                                                                       (csr_addr12 == 12'h304) ||
                                                                        (csr_addr12 == 12'h305) ||
                                                                        (csr_addr12 == 12'h341) ||
-                                                                       (csr_addr12 == 12'h342);
+                                                                       (csr_addr12 == 12'h342) ||
+                                                                       (csr_addr12 == 12'h340);
     assign                              csr_source                   = funct3[2] ?
                                                                        {27'd0, rs1} : EXU_rs1_in;
     assign                              csr_write_req                = csr_access &&
@@ -186,17 +201,21 @@ module IDU(
     // It now also carries the two mandated load/store-misalignment causes;
     // the instruction is still distinguished by trap_cause/trap_tval below.
     assign                              illegal_inst                = valid_last && (!legal_inst || misaligned_access);
-    assign                              trap_cause                  = misaligned_access ?
+    assign                              trap_cause                  = irq_fire ? 32'h8000_0007 :
+                                                                       misaligned_access ?
                                                                        ((opcode == `S_opcode) ? 32'd6 : 32'd4) :
                                                                        ecall_flag ? 32'd11 :
                                                                        ebreak_flag ? 32'd3 : 32'd2;
-    assign                              trap_tval                   = misaligned_access ? memory_address :
+    assign                              trap_tval                   = irq_fire ? 32'd0 :
+                                                                       misaligned_access ? memory_address :
                                                                        (illegal_inst ? inst : 32'd0);
 
     assign                              csr_wen_next[0]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h341);
     assign                              csr_wen_next[1]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h342);
     assign                              csr_wen_next[2]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h300);
     assign                              csr_wen_next[3]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h305);
+    assign                              csr_wen_next[4]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h304);
+    assign                              csr_wen_next[5]             = csr_write_req && csr_writeable && (csr_addr12 == 12'h340);
 
     assign                              R_wen_next                  = legal_inst && !misaligned_access && ((opcode == `R_opcode) || (opcode == `I0_opcode) ||
                                                                        (opcode == `I1_opcode) || (opcode == `I2_opcode) ||
@@ -308,6 +327,7 @@ Reg_Stack Reg_Stack_inst0(
     .trap_cause                         (trap_cause                ),
     .trap_tval                          (trap_tval                 ),
     .mret_fire                          (mret_fire                 ),
+    .timer_irq                          (timer_irq                 ),
 
     .rs1                                (rs1                       ),
     .rs2                                (rs2                       ),
@@ -325,7 +345,10 @@ Reg_Stack Reg_Stack_inst0(
     .csrs                               (csrs                      ),
     .mepc_out                           (mepc_out                  ),
     .mtvec_out                          (mtvec_out                 ),
-    .mtval_out                           ()
+    .mtval_out                           (),
+    .mstatus_out                         (mstatus_out),
+    .mie_out                             (mie_out)
+    ,.mscratch_out                        (mscratch_csr_out)
 );
 
 

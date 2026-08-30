@@ -5,7 +5,8 @@ module CSR #(
     input              clock,
     input              reset,
     input              [31:0] csrd,
-    input              [3:0]  csr_wen,
+    input              [5:0]  csr_wen,
+    input                     timer_irq,
     input              trap_fire,
     input              [31:0] trap_pc,
     input              [31:0] trap_cause,
@@ -18,7 +19,10 @@ module CSR #(
     output             [31:0] mcause_out,
     output             [31:0] mtval_out,
     output             [31:0] mstatus_out,
-    output             [31:0] mtvec_out
+    output             [31:0] mtvec_out,
+    output             [31:0] mie_out,
+    output             [31:0] mip_out,
+    output             [31:0] mscratch_out
 );
 
     wire [31:0] mepc_in;
@@ -26,6 +30,7 @@ module CSR #(
     wire [31:0] mtval_in;
     wire [31:0] mstatus_in;
     wire [31:0] mtvec_in;
+    wire [31:0] mscratch_in;
     wire [31:0] mstatus_trap;
     wire [31:0] mstatus_mret;
 
@@ -33,6 +38,7 @@ module CSR #(
     assign mcause_in = trap_fire ? trap_cause : csrd;
     assign mtval_in = trap_fire ? trap_tval : csrd;
     assign mtvec_in = csrd;
+    assign mscratch_in = csrd;
 
     // Machine trap entry and return update the architecturally visible
     // interrupt state while preserving unrelated mstatus bits.
@@ -44,6 +50,7 @@ module CSR #(
                           mstatus_out[2:0]};
     assign mstatus_in = trap_fire ? mstatus_trap :
                         mret_fire ? mstatus_mret : csrd;
+    assign mip_out = timer_irq ? 32'h0000_0080 : 32'd0;
 
     assign mvendorid_out = 32'h7973_7978;
     assign marchid_out   = 32'h016F_BCBD;
@@ -71,6 +78,16 @@ module CSR #(
     Reg #(.WIDTH(CSR_WIDTH), .RESET_VAL(RESET_VAL)) CSR_MTVEC (
         .clock(clock), .reset(reset), .din(mtvec_in), .dout(mtvec_out),
         .wen(csr_wen[3])
+    );
+
+    Reg #(.WIDTH(CSR_WIDTH), .RESET_VAL(RESET_VAL)) CSR_MIE (
+        .clock(clock), .reset(reset), .din(csrd), .dout(mie_out),
+        .wen(csr_wen[4])
+    );
+
+    Reg #(.WIDTH(CSR_WIDTH), .RESET_VAL(RESET_VAL)) CSR_MSCRATCH (
+        .clock(clock), .reset(reset), .din(mscratch_in),
+        .dout(mscratch_out), .wen(csr_wen[5])
     );
 
 endmodule

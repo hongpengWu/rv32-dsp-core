@@ -109,6 +109,7 @@ module rv32_pynq_z2_sync_mmcm_demo #(
                                  (dmem_req_addr < DATA_END);
 
     myCPU_sync core (
+        .timer_irq(1'b0),
         .cpu_clk(cpu_clk),
         .cpu_rst(cpu_rst),
         .imem_req_valid(imem_req_valid), .imem_req_addr(imem_req_addr),
@@ -126,7 +127,9 @@ module rv32_pynq_z2_sync_mmcm_demo #(
         .INIT_FILE(IMEM_INIT_FILE)
     ) imem (
         .clk(cpu_clk), .req_valid(imem_req_valid), .req_addr(imem_req_addr),
-        .rsp_valid(imem_rsp_valid), .rsp_data(imem_rsp_data)
+        .rsp_valid(imem_rsp_valid), .rsp_data(imem_rsp_data),
+        .data_req_valid(1'b0), .data_req_addr(32'd0),
+        .data_rsp_valid(), .data_rsp_data()
     );
 
     rv32_sync_byte_ram #(

@@ -12,7 +12,7 @@ module LSU_sync (
     input  logic        mem_ren,
     input  logic        mem_wen,
     input  logic        R_wen,
-    input  logic [3:0]  csr_wen,
+    input  logic [5:0]  csr_wen,
     input  logic [31:0] Ex_result,
     input  logic [4:0]  rd,
     input  logic [2:0]  funct3,
@@ -25,7 +25,7 @@ module LSU_sync (
     output logic [31:0] rd_value_next,
     output logic        R_wen_next,
     output logic [31:0] LSU_Rdata,
-    output logic [3:0]  csr_wen_next,
+    output logic [5:0]  csr_wen_next,
     output logic [31:0] Ex_result_next,
     output logic [4:0]  rd_next,
     output logic        mem_ren_next,
@@ -46,7 +46,7 @@ module LSU_sync (
     logic        mem_ren_reg;
     logic        mem_wen_reg;
     logic        R_wen_reg;
-    logic [3:0]  csr_wen_reg;
+    logic [5:0]  csr_wen_reg;
     logic [31:0] Ex_result_reg;
     logic [31:0] rd_value_reg;
     logic [4:0]  rd_reg;
@@ -97,7 +97,7 @@ module LSU_sync (
     assign mem_ren_next   = valid_next && mem_ren_reg;
     assign R_wen_next     = valid_next && R_wen_reg;
     assign jump_flag_next = valid_next && jump_flag_reg;
-    assign csr_wen_next   = valid_next ? csr_wen_reg : 4'b0;
+    assign csr_wen_next   = valid_next ? csr_wen_reg : 6'b0;
 
     always_ff @(posedge clock) begin
         if (reset) begin
