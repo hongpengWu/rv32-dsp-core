@@ -7,12 +7,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
 $tests = @(
-    @{ Name = 'smoke'; Script = 'run_xsim.ps1'; Pass = 'SMOKE PASS:' },
     @{ Name = 'hazard'; Script = 'run_hazard_xsim.ps1'; Pass = 'HAZARD PASS' },
-    @{ Name = 'control-hazard'; Script = 'run_control_flow_xsim.ps1'; Pass = 'CONTROL PASS:' },
-    @{ Name = 'directed-rv32i'; Script = 'run_directed_xsim.ps1'; Pass = 'DIRECTED PASS:' },
-    @{ Name = 'load-store'; Script = 'run_load_store_xsim.ps1'; Pass = 'LOAD/STORE PASS:' },
-    @{ Name = 'system-trap'; Script = 'run_system_xsim.ps1'; Pass = 'SYSTEM PASS:' },
     @{ Name = 'sync-memory-model'; Script = 'run_sync_mem_xsim.ps1'; Pass = 'SYNC MEM PASS:' },
     @{ Name = 'sync-core'; Script = 'run_cpu_sync_xsim.ps1'; Pass = 'SYNC CORE PASS:' },
     @{ Name = 'sync-control'; Script = 'run_cpu_sync_control_xsim.ps1'; Pass = 'SYNC CONTROL PASS:' },
@@ -22,11 +17,7 @@ $tests = @(
     @{ Name = 'rv32m-multiply'; Script = 'run_mul_xsim.ps1'; Pass = 'MUL PASS:' },
     @{ Name = 'custom-dsp'; Script = 'run_dsp_custom_xsim.ps1'; Pass = 'DSP CUSTOM PASS:' },
     @{ Name = 'nano-soc'; Script = 'run_nano_soc_xsim.ps1'; Pass = 'NANO SOC XSIM PASS' },
-    @{ Name = 'pynq-pl-demo'; Script = 'run_pynq_demo_xsim.ps1'; Pass = 'PYNQ DEMO PASS:' },
-    @{ Name = 'pynq-sync-demo'; Script = 'run_pynq_sync_demo_xsim.ps1'; Pass = 'SYNC PYNQ PASS:' },
-    @{ Name = 'pynq-sync-mmcm-demo'; Script = 'run_pynq_sync_mmcm_demo_xsim.ps1'; Pass = 'MMCM PYNQ PASS:' },
-    @{ Name = 'pynq-z2-nano-top'; Script = 'run_pynq_z2_nano_xsim.ps1'; Pass = 'PYNQ NANO PASS:' },
-    @{ Name = 'controlled-pl-shell'; Script = 'run_pl_controlled_xsim.ps1'; Pass = 'CONTROLLED PL PASS:' }
+    @{ Name = 'pynq-z2-nano-top'; Script = 'run_pynq_z2_nano_xsim.ps1'; Pass = 'PYNQ NANO PASS:' }
 )
 
 foreach ($test in $tests) {

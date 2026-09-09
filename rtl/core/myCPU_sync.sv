@@ -2,7 +2,7 @@
 
 // Synchronous-memory variant of the Core.
 //
-// `myCPU` remains the compatibility top for the completed legacy regressions.
+// This is the sole processor top used by the final Nano/DSP design.
 // This top uses IFU_sync/LSU_sync and is the migration path toward true
 // Block-Memory-Generator BRAM.  It has no PS7 dependency.
 module myCPU_sync (

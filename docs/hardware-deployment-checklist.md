@@ -19,8 +19,6 @@ PS software application.
       failing endpoints, and zero DRC errors.
 - [x] Simulate the Nano top's cold start and runtime BTN0 reset, including
       MMCM unlock, CPU-domain reset, LED clear, CPU restart, and UART TX.
-- [ ] Close timing at 125 MHz for the direct-clock comparison top.  It is
-      retained as a diagnostic baseline and is not the board sign-off image.
 
 ## First power-up
 
@@ -30,9 +28,8 @@ PS software application.
 - [ ] Open Vivado Hardware Manager and connect to the local hardware target.
 - [ ] Program `build/bitstream_pynq_z2_nano/rv32_pynq_z2_nano.bit`.
 - [ ] Confirm the DONE indicator is asserted after programming.
-- [ ] Confirm the RT-Thread Nano image eventually drives the LEDs. For the
-      first electrical smoke test, a temporary LED-only ROM image may be used.
-      The individual LEDs and push buttons on PYNQ-Z2 are active-high.
+- [ ] Confirm the RT-Thread Nano image eventually drives the LEDs. The
+      individual LEDs and push buttons on PYNQ-Z2 are active-high.
 - [ ] If UART output is required, connect a 3.3 V USB-TTL adapter RX to
       Raspberry-Pi header pin 37 (W9) and adapter GND to header pin 39 (or
       another board ground). The on-board FT2232 bridge is PS-MIO-only.

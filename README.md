@@ -1,284 +1,139 @@
 # RV32 DSP Core
 
-This repository develops the original JYD contest RV32I student core into a
-small, verifiable FPGA DSP processor for the PYNQ-Z2 board.
+This repository contains one final hardware path: a small RV32I/Zicsr FPGA
+processor with `Zmmul`, custom fixed-point DSP operations, synchronous memory,
+and an RT-Thread Nano SoC for PYNQ-Z2.
 
-## Intended architecture
+It is an educational in-order soft core. It does not target Linux, an MMU,
+caches, superscalar execution, or commercial DSP compatibility. The complete
+design is PL-only; PS7, AXI, DDR, and Linux are not build or simulation
+dependencies.
 
-- RV32I base ISA with strict instruction legality checks
-- Zicsr and basic Machine-mode traps
-- Zmmul multiplication, with DSP48E1 mapping evaluated separately
-- A documented custom fixed-point DSP extension
-- Five-stage in-order pipeline with explicit valid/stall/flush behavior
-- Synchronous Harvard instruction and data BRAM
-- PYNQ-Z2 PS software loading and run control
+## Final hardware structure
 
-The protected baseline is an RV32I + Zicsr machine running RT-Thread Nano from
-PL-only synchronous ROM, RAM, UART, and machine-timer peripherals. The Core
-now additionally implements standard `Zmmul` and two custom fixed-point DSP
-operations. PS/AXI integration remains optional and is not required by either
-the Nano baseline or the current DSP image.
+```text
+rv32_pynq_z2_nano             PYNQ-Z2 clock, reset, LEDs, and UART pin
+`-- rv32_nano_soc             ROM, RAM, timer, UART, and LED MMIO
+    |-- myCPU_sync            processor top
+    |-- rv32_sync_rom
+    |-- rv32_sync_byte_ram
+    |-- rv32_machine_timer
+    `-- rv32_uart
+```
 
-This is an educational FPGA soft core. It does not target Linux, an MMU,
-caches, superscalar execution, or commercial DSP compatibility.
+The processor implements:
+
+- RV32I with explicit instruction legality checks;
+- Zicsr and Machine-mode traps/interrupts used by Nano;
+- precise illegal-instruction and load/store-misalignment traps;
+- the four `Zmmul` operations;
+- `XDOTP16` packed signed dot product;
+- `XQ15MUL` rounded and saturated Q1.15 multiply;
+- five-stage in-order execution with valid/stall/flush control;
+- one-cycle synchronous instruction and data-memory interfaces.
 
 ## Repository layout
 
 ```text
-rtl/core/       Processor RTL
+rtl/core/       Final processor RTL
+rtl/soc/        Final Nano SoC and PYNQ-Z2 RTL
 sim/            Self-checking SystemVerilog testbenches
-scripts/        Windows build and test scripts
-vivado/         Reproducible Vivado project scripts
-sw/             Bare-metal runtime and DSP benchmarks
-tests/          Directed and architecture-test integration
-docs/           Design notes, audit results, and milestones
+scripts/        Windows build and verification entry points
+vivado/         Final PYNQ-Z2 project, bitstream, and constraints scripts
+sw/             RT-Thread Nano port and DSP software
+tests/          Upstream RISC-V test integration
+docs/           Current design and deployment notes
 ```
 
-## Baseline source
+Generated files are written under `build/` and are not tracked.
 
-The initial RTL under `rtl/core` is an unchanged copy of:
+## Required host tools
 
-```text
-E:\FPGA\vivado_prj\digital_twin.srcs\sources_1\new\CPU
-```
+- Vivado/XSim 2024.2: `E:\Xilinx\Vivado\2024.2`
+- xPack RISC-V bare-metal GCC 15.2.0:
+  `E:\riscv-tools\xpack-riscv-none-elf-gcc-15.2.0-1`
+- upstream `riscv-tests`: `E:\riscv-tools\src\riscv-tests`
+- Git for Windows and Python 3.12
 
-The contest SoC wrapper and peripherals are deliberately not copied. The
-original project remains the reference for its old memory map and behavior.
+No Linux or WSL environment is required for the checked-in flows.
 
-## Host tools
+## Verification
 
-- Vivado 2024.2: `E:\Xilinx\Vivado\2024.2`
-- Git for Windows
-- Python 3.12
-- xPack RISC-V bare-metal GCC 15.2.0: `E:\riscv-tools\xpack-riscv-none-elf-gcc-15.2.0-1`
-- GitHub CLI
-
-## Run the baseline smoke test
-
-From PowerShell:
-
-```powershell
-.\scripts\run_xsim.ps1
-```
-
-The smoke test uses hand-encoded RV32I instructions, so it does not require a
-RISC-V compiler. It is only a build/integration check, not ISA compliance.
-
-Run the current directed RV32I arithmetic test:
-
-```powershell
-.\scripts\run_directed_xsim.ps1
-```
-
-This test also uses hand-encoded instructions and checks 24 register results
-through store addresses. It is a focused regression, not a substitute for the
-official architectural tests.
-
-Run the hazard and RV32I control-flow regressions:
-
-```powershell
-.\scripts\run_hazard_xsim.ps1
-.\scripts\run_control_flow_xsim.ps1
-```
-
-The synchronous Core's architectural trap checks can be exercised directly:
-
-```powershell
-.\scripts\run_cpu_sync_control_xsim.ps1
-.\scripts\run_cpu_sync_misaligned_xsim.ps1
-```
-
-These tests cover valid-gated forwarding, true and false load-use hazards, all
-six RV32I branch conditions on taken and not-taken paths, negative branch/JAL
-offsets, JAL/JALR link values, JALR bit-zero clearing, and wrong-path flushing.
-All simulation scripts require an explicit testbench pass marker because XSim
-can return process exit code zero after a SystemVerilog `$fatal`.
-
-Run the complete PL-only strict regression:
+Run the complete board-independent PL regression:
 
 ```powershell
 .\scripts\run_pl_strict.ps1
 ```
 
-The strict entry point runs every current test, requires its pass marker, and
-fails on tool errors, simulator warnings, fatal messages, or X/Z detection in
-the PYNQ integration test. It does not require a RISC-V compiler or a board.
+It covers pipeline hazards, synchronous memory and Core execution, control
+flow and traps, misalignment, timer interrupts, `Zmmul`, custom DSP operations,
+the Nano SoC, and the final PYNQ-Z2 top. Every test requires an explicit pass
+marker and fails on simulator warnings or active-interface X/Z values.
 
-Run one upstream `riscv-tests` RV32UI case, or the selected RV32I profile:
+Run the selected 41-case upstream RV32UI profile:
 
 ```powershell
-.\scripts\run_riscv_test_xsim.ps1 -Test add
 .\scripts\run_rv32ui_official.ps1
 ```
 
-The Windows-native flow compiles the upstream assembly with
-`-march=rv32i_zicsr_zifencei -mabi=ilp32`, converts the ELF to a sparse
-32-bit memory image, runs it on `myCPU_sync`, and requires `tohost=1`.
-The selected profile contains 41 passing RV32UI cases.  Upstream `ma_data` is
-excluded because it requires hardware-completed misaligned accesses, whereas
-this Core intentionally implements the standard load/store-misalignment traps.
-See `docs/riscv-tests.md` for the exact scope and provenance.
+The profile uses `-march=rv32i_zicsr_zifencei -mabi=ilp32` and requires
+`tohost=1`. Upstream `ma_data` is intentionally excluded because this Core
+traps misaligned loads/stores instead of completing them in hardware. See
+[`docs/riscv-tests.md`](docs/riscv-tests.md) for the exact scope.
 
-## RV32M/Zmmul multiply extension
-
-The Core now implements the four standard `Zmmul` instructions (`MUL`,
-`MULH`, `MULHSU`, and `MULHU`) as single-cycle EXU operations. Run the focused
-signedness/high-half test with:
-
-```powershell
-.\scripts\run_mul_xsim.ps1
-```
-
-The extension is included in the complete PL strict regression. The Nano image
-continues to use `rv32i_zicsr_zifencei`; DSP benchmark programs can opt into
-`rv32im` separately. See [`docs/rv32m-multiply.md`](docs/rv32m-multiply.md)
-for encodings, implementation details, and the next custom-DSP boundary.
-
-## Custom packed fixed-point DSP extension
-
-The first project-specific `custom-0` operations are now implemented and
-tested:
-
-- `XDOTP16`: two signed 16×16 lane products accumulated into one 32-bit sum;
-- `XQ15MUL`: signed Q1.15 low-half multiply with deterministic rounding and
-  signed saturation to `[-32768, 32767]`.
-
-Run the focused CPU regression and the toolchain assembly check with:
-
-```powershell
-.\scripts\run_dsp_custom_xsim.ps1
-.\scripts\check_dsp_asm.ps1
-```
-
-The C wrappers in [`sw/dsp/dsp_intrinsics.h`](sw/dsp/dsp_intrinsics.h) use
-GNU `.insn` directives, so they build with the ordinary RV32I compiler and do
-not require a custom GCC fork. The complete design note is
-[`docs/custom-dsp.md`](docs/custom-dsp.md).
-
-## RT-Thread Nano PL-only image
-
-RT-Thread Nano does not require Linux.  The Windows-native flow below uses the
-xPack bare-metal GCC toolchain, the official Nano kernel sources, and XSim:
+Build and simulate RT-Thread Nano:
 
 ```powershell
 .\scripts\build_rtthread_nano.ps1 -SimFast
 .\scripts\run_rtthread_nano_xsim.ps1
 ```
 
-`build_rtthread_nano.ps1` emits `build/rtthread_nano/program.mem` from an
-RV32I ELF.  The image links code at `0x8000_0000` and RAM at `0x8010_0000`,
-sets `mtvec`, copies `.data`, clears `.bss`, and starts the Nano scheduler.
-`run_rtthread_nano_xsim.ps1` then verifies the same image on
-`rv32_nano_soc`: RT-Thread banner, UART output, machine-timer ticks,
-`rt_thread_mdelay()` wakeups, context switching, and LED activity.  `-SimFast`
-only shortens the simulated timer interval and increases the simulated UART
-baud; the default constants are the 50 MHz / 1 kHz / 115200-baud hardware
-values used by the Zmmul-enabled PYNQ image.
+This verifies kernel startup, UART output, machine-timer ticks, delayed-thread
+wakeups, context switching, and LED activity. `-SimFast` changes only
+simulation timer/UART constants; a normal build uses the 50 MHz, 1 kHz, and
+115200-baud hardware values.
 
-The Nano shell's map is:
-
-```text
-0x8000_0000  instruction ROM (also readable through the data port for .rodata)
-0x8010_0000  byte-write data RAM (32 KiB default)
-0x0200_0000  mtime, 0x0200_4000 mtimecmp
-0x1000_0000  polling UART TXDATA/STATUS
-0x8020_0040  LED register
-```
-
-The first Nano application is intentionally static (main thread plus one
-worker).  Heap, device framework, filesystems, networking, and PS7 are left
-off until the core/ABI baseline is stable.
-
-The synchronous-memory migration is exercised separately with:
+Focused extension checks remain available:
 
 ```powershell
-.\scripts\run_sync_mem_xsim.ps1
-.\scripts\run_cpu_sync_xsim.ps1
+.\scripts\run_mul_xsim.ps1
+.\scripts\run_dsp_custom_xsim.ps1
+.\scripts\check_dsp_asm.ps1
 ```
 
-`myCPU_sync` is a parallel migration top; the compatibility `myCPU` and the
-current PYNQ demo remain unchanged until the synchronous path has accumulated
-the same architectural coverage.
+## PYNQ-Z2 bitstream
 
-Create a local Vivado project when GUI inspection is useful:
+Build the normal Nano image, create the final Vivado project, and implement it:
 
 ```powershell
-& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
-  -source .\vivado\create_project.tcl
-```
-
-Generated projects and simulation files go under `build/` and are not tracked.
-
-## PYNQ-Z2 standalone PL images
-
-The direct-clock comparison demo uses the 125 MHz PL clock, BTN0 as reset, and
-the four user LEDs. The timing-safe RV32I comparison image uses a real MMCM to
-derive an 80 MHz Core/BRAM clock from that 125 MHz reference. The current Nano
-image, which also includes Zmmul, uses a 50 MHz MMCM output so the
-combinational multiplier has positive timing margin. The current Nano top is
-`rv32_pynq_z2_nano`; it has no PS7, AXI, DDR, or Linux dependency and
-boots the RT-Thread Nano image from generated ROM. The earlier LED-only tops
-remain available as small electrical smoke-test references. All synchronous
-paths use inferred Block RAM with explicit one-cycle request/response latency.
-
-Run the self-checking integration simulation:
-
-```powershell
-.\scripts\run_pynq_demo_xsim.ps1
-```
-
-Create the Vivado project and generate a bitstream:
-
-```powershell
-& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
-  -source .\vivado\create_pynq_z2_project.tcl
-& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
-  -source .\vivado\build_pynq_z2_bitstream.tcl
-```
-
-For the timing-safe synchronous LED-only comparison image:
-
-```powershell
-& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
-  -source .\vivado\create_pynq_z2_sync_mmcm_project.tcl
-& 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
-  -source .\vivado\build_pynq_z2_sync_mmcm_bitstream.tcl
-```
-
-For the standalone RT-Thread Nano board image:
-
-```powershell
+.\scripts\build_rtthread_nano.ps1
 & 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
   -source .\vivado\create_pynq_z2_nano_project.tcl
 & 'E:\Xilinx\Vivado\2024.2\bin\vivado.bat' -mode batch `
   -source .\vivado\build_pynq_z2_nano_bitstream.tcl
 ```
 
-The timing evidence for the clocking choices is recorded in
-[`docs/timing-baseline.md`](docs/timing-baseline.md).  The direct 125 MHz
-variant is retained for comparison; use the MMCM bitstream for board
-sign-off.
+The result is
+`build/bitstream_pynq_z2_nano/rv32_pynq_z2_nano.bit`. The board top derives a
+50 MHz Core clock from the 125 MHz PL reference and uses BTN0 for reset, four
+user LEDs, and a TX-only 3.3 V UART on Raspberry-Pi header pin 37 (W9).
 
-The Nano bitstream and post-route reports are written under
-`build/bitstream_pynq_z2_nano/`. The LED-only MMCM bitstream and reports are
-written under `build/bitstream_pynq_z2_sync_mmcm/`. The Nano top exports UART
-TX on Raspberry-Pi header pin 37 (W9), because the on-board FT2232 bridge is
-connected to PS MIO14/15. Use a 3.3 V USB-TTL adapter for serial output. See
-[`docs/pynq-z2.md`](docs/pynq-z2.md) for the verified pin map and the
-PHYRSTB/125 MHz clock caveat.
+The post-route reference result is WNS +1.015 ns, WHS +0.155 ns, no failing
+timing endpoints, no DRC errors, and 7 DSP48E1 blocks. See
+[`docs/timing-baseline.md`](docs/timing-baseline.md) and
+[`docs/hardware-deployment-checklist.md`](docs/hardware-deployment-checklist.md).
 
-This first milestone is intentionally PL-only, so Vivado reports the expected
-`ZPS7-1` advisory that no PS7 processing-system block is present. It does not
-prevent bitstream generation or PL configuration. The PYNQ-Z2 manual confirms
-that the push-buttons are active-high when pressed and the individual LEDs are
-active-high.
+## Nano memory map
 
-The board-only procedure is tracked separately in
-`docs/hardware-deployment-checklist.md` and can be completed when the PYNQ-Z2
-arrives.
+```text
+0x8000_0000  instruction ROM and data-side read-only constants
+0x8010_0000  byte-write data RAM (32 KiB default)
+0x0200_0000  mtime
+0x0200_4000  mtimecmp
+0x1000_0000  UART TXDATA/STATUS
+0x8020_0040  four-bit LED register
+```
 
-The optional `rv32_pl_controlled` shell reserves start, reset, done, cycle, and
-retirement-counter signals for a future PS7/AXI-Lite adapter. It is verified as
-a standalone PL module today; the recommended board top is
-`rv32_pynq_z2_nano` (with the LED-only tops retained for diagnostics), so no
-PS, Linux, or board is required for the regression.
+The initial Nano application uses static threads. Heap, device framework,
+filesystems, networking, and PS-controlled program loading are outside the
+current hardware baseline.

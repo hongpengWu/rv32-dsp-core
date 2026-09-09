@@ -59,10 +59,10 @@ module LSU_sync (
 
     assign ready_last = ready_next;
 
-    // Translate the legacy size encoding into byte strobes.  Aligning the
+    // Translate the load/store size encoding into byte strobes. Aligning the
     // address and shifting the payload preserves byte/halfword accesses that
     // stay within a 32-bit word; misaligned word-crossing accesses will be
-    // rejected by the Core's future alignment trap logic.
+    // rejected by the Core's alignment-trap logic.
     always_comb begin
         case (funct3)
             3'b000: base_wstrb = 4'b0001; // sb

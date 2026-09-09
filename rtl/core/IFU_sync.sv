@@ -2,8 +2,8 @@
 
 // Instruction fetch unit for a one-cycle synchronous memory response.
 //
-// The legacy IFU consumes an asynchronous instruction word.  This version
-// keeps a one-entry response buffer and tags the response with its PC.  A
+// The unit keeps a one-entry response buffer and tags the response with its
+// PC. A
 // redirect kills both a buffered wrong-path response and an in-flight request
 // whose response arrives on the redirect edge.
 module IFU_sync (

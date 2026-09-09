@@ -3,7 +3,7 @@
 Each phase must end with passing automated tests and a separate Git commit.
 DSP instructions are intentionally delayed until the RV32I baseline is stable.
 
-## Phase 0: Preserve and reproduce the legacy core
+## Phase 0: Reproduce the original core (complete)
 
 - Copy the CPU RTL without changing behavior.
 - Compile it independently from the contest SoC.
@@ -54,21 +54,20 @@ Windows-native GCC/ELF/XSim flow passes the selected 41-case upstream RV32UI
 profile.  The remaining Phase 3 work is broader privileged/CSR coverage and
 integration with the current RISC-V architectural test framework.
 
-## Phase 4: Synchronous memory and PYNQ-Z2
+## Phase 4: Synchronous memory and PYNQ-Z2 (complete)
 
-- Replace the zero-latency ports with request/response interfaces.
+- Use one-cycle request/response interfaces for instruction and data memory.
 - Use four byte write strobes for data memory.
-- Replace distributed ROM/RAM with true dual-port Block Memory Generator IP.
-- Give the PS one BRAM port and the core the other port.
-- Add AXI-Lite reset, start, done, cycle, and instruction-retired registers.
+- Infer Xilinx Block RAM for the final ROM and RAM.
+- Provide a standalone PYNQ-Z2 top with MMCM, reset, LED, and UART wiring.
+- Keep PS/AXI integration optional and outside the final PL baseline.
 
-Exit criterion: Python loads a program and data, starts the PL core, waits for
-completion, and reads the correct result.
+Exit criterion: the Nano image boots from PL ROM, uses synchronous RAM and
+MMIO, passes board-top simulation, and closes post-route timing.
 
-Current status: synchronous Core/ROM/RAM interfaces, a PL-only PYNQ-Z2 demo,
-and a timing-safe 80 MHz MMCM board image are implemented and covered by the
-strict Windows/XSim regression.  PS/AXI control remains optional and is not a
-dependency for the current milestone.
+Current status: `rv32_pynq_z2_nano` is the sole board top. The complete
+Nano/Zmmul/custom-DSP image is covered by the strict Windows/XSim regression
+and closes post-route timing at 50 MHz. PS/AXI control is not a dependency.
 
 ## Phase 5: Standard multiply and custom DSP extension
 
